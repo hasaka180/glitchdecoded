@@ -7,9 +7,10 @@
   --ink: #07070c;
   --bone: #f4f4f5;
   --cyan: #4de2ff;
+  --yellow: #efe87b;
   --blue: #1b2ac9;
 
-  --background: var(--red);
+  --background: var(--ink);
   --foreground: var(--bone);
 }
 
@@ -21,10 +22,12 @@
   --color-ink: var(--ink);
   --color-bone: var(--bone);
   --color-cyan: var(--cyan);
+  --color-yellow: var(--yellow);
   --color-blue: var(--blue);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-playfair);
+  --font-pixel: var(--font-pixel-face);
 }
 
 html,

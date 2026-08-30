@@ -3,66 +3,43 @@ import PixelUnglitch from "./PixelUnglitch";
 
 export default function Hero() {
   return (
-    <section className="scanlines relative isolate min-h-[100svh] overflow-hidden bg-[color:var(--red)]">
-      {/* Reveal layer: red plate that unglitches into the photo beneath. */}
+    <section className="scanlines relative isolate min-h-[100svh] overflow-hidden bg-[color:var(--ink)]">
+      {/* Base layer: the photo, fractured into glass panes under the pointer. */}
       <PixelUnglitch
         className="absolute inset-0 -z-10"
-        src="/assets/background.png"
+        src="/assets/wallpaper.jpg"
         unit={18}
         radius={255}
+        focus={[0.51, 0.5]}
+        anchor={[0.56, 0.46]}
+        zoom={1.15}
+        mobileSrc="/assets/wallpapermob.jpg"
+        mobileFocus={[0.52, 0.52]}
+        mobileAnchor={[0.5, 0.44]}
+        mobileZoom={1.02}
       />
 
       {/* light sweep */}
       <div className="sweep pointer-events-none absolute inset-x-0 top-0 -z-10 h-24 bg-gradient-to-b from-transparent via-white/25 to-transparent" />
 
-      {/* legibility scrims — both flanks carry type */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 -z-10 w-1/3 bg-gradient-to-r from-[color:var(--red)]/85 to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 w-1/3 bg-gradient-to-l from-[color:var(--red)]/85 to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-2/5 bg-gradient-to-t from-[color:var(--red)]/90 via-[color:var(--red)]/40 to-transparent sm:h-1/4 sm:from-[color:var(--red)]/70 sm:via-transparent" />
+      {/* legibility: no flat veil — only soft scrims where type sits */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 -z-10 hidden w-2/5 bg-gradient-to-r from-[color:var(--ink)]/60 to-transparent sm:block" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 hidden w-2/5 bg-gradient-to-l from-[color:var(--ink)]/50 to-transparent sm:block" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-32 bg-gradient-to-b from-[color:var(--ink)]/55 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-2/5 bg-gradient-to-t from-[color:var(--ink)]/80 to-transparent sm:h-1/3 sm:from-[color:var(--ink)]/70" />
 
-      <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1500px] flex-col px-5 pt-32 pb-24 sm:px-10">
-        <p className="font-mono text-[10px] tracking-[0.32em] text-white/85 uppercase sm:text-[11px]">
-          <span className="mr-3 inline-block size-2 translate-y-px bg-white" />
-          Unpopular opinions · untold stories
-        </p>
-
-        {/* The two halves straddle the subject: one upper-left of her, one
-            lower-right, so the reveal reads as the thing between them. */}
-        <div className="grid flex-1 grid-cols-1 content-between gap-10 py-[4vh] sm:grid-cols-2 sm:grid-rows-2 sm:gap-0">
-          <h1 className="justify-self-start self-start sm:col-start-1 sm:row-start-1">
-            <span
-              className="glitch block text-[clamp(2rem,5.4vw,4.6rem)] leading-[0.95] font-black tracking-[-0.02em] uppercase"
-              data-text="Explore the"
-              style={{ "--glitch-delay": "0.6s" } as CSSProperties}
-            >
-              Explore the
-            </span>
-            <span
-              className="glitch block font-display text-[clamp(2.6rem,7.4vw,6.4rem)] leading-[0.95] font-medium italic"
-              data-text="Glitch →"
-              style={{ "--glitch-delay": "2.1s" } as CSSProperties}
-            >
-              Glitch →
-            </span>
-          </h1>
-
-          <h2 className="justify-self-end self-end text-right sm:col-start-2 sm:row-start-2">
-            <span
-              className="glitch block text-[clamp(2rem,5.4vw,4.6rem)] leading-[0.95] font-black tracking-[-0.02em] uppercase"
-              data-text="Question"
-              style={{ "--glitch-delay": "3.4s" } as CSSProperties}
-            >
-              Question
-            </span>
-            <span
-              className="glitch block font-display text-[clamp(2.6rem,7.4vw,6.4rem)] leading-[0.95] font-medium italic"
-              data-text="Everything"
-              style={{ "--glitch-delay": "4.9s" } as CSSProperties}
-            >
-              Everything
-            </span>
-          </h2>
-        </div>
+      <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-[1500px] flex-col px-5 pt-24 pb-28 sm:px-10 sm:pb-20">
+        {/* One word, set big in a bitmap face and fractured by the panes
+            passing behind it. */}
+        <h1 className="flex flex-1 items-end justify-center">
+          <span
+            className="glitch font-pixel text-[clamp(3rem,20vw,15rem)] leading-[0.85] tracking-[-0.01em] text-[color:var(--yellow)] [text-shadow:6px_6px_0_rgba(7,7,12,0.45)]"
+            data-text="DECODED"
+            style={{ "--glitch-delay": "1.4s" } as CSSProperties}
+          >
+            DECODED
+          </span>
+        </h1>
       </div>
 
       <a

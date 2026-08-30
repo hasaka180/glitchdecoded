@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,17 +22,25 @@ const playfair = Playfair_Display({
   weight: ["500", "700", "900"],
 });
 
+// Bitmap face for the word mark, self-hosted from public/assets.
+const astheticPixel = localFont({
+  src: "../../public/assets/AstheticPixelDemoRegular-2v148.otf",
+  variable: "--font-pixel-face",
+  display: "swap",
+  weight: "400",
+});
+
 export const metadata: Metadata = {
-  title: "UNGLITCH — Creative Technology Studio",
+  title: "A Glitch in the Matrix — Decoded",
   description:
-    "Interfaces that behave like signal, not decoration. A pixel-spotlight hero that clears the noise where you look.",
+    "Unpopular opinions and untold stories. Move your cursor and the picture fractures into glass where you look.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${astheticPixel.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

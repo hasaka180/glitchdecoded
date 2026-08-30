@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   /** Photo revealed under the red plate. Falls back to a procedural neon scene. */
@@ -15,10 +15,33 @@ type Props = {
   anchor?: [number, number];
   /** Extra zoom over cover-fit, so there is room to pan. */
   zoom?: number;
+  /** Narrow-viewport art, with its own framing. Falls back to the wide one. */
+  mobileSrc?: string;
+  mobileFocus?: [number, number];
+  mobileAnchor?: [number, number];
+  mobileZoom?: number;
+  /** Width at or below which the mobile art is used. */
+  mobileMaxWidth?: number;
   className?: string;
 };
 
-const RED = "#ec1b2e";
+/** Tracks a max-width media query, resolved on the first client render. */
+function useNarrow(maxWidth: number) {
+  const [narrow, setNarrow] = useState(() =>
+    typeof window === "undefined"
+      ? false
+      : window.matchMedia(`(max-width: ${maxWidth}px)`).matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${maxWidth}px)`);
+    const on = () => setNarrow(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, [maxWidth]);
+  return narrow;
+}
+
 const IDLE_AFTER = 1200; // ms of stillness before the hero drives itself
 
 /**
@@ -44,15 +67,20 @@ const SHAPES: [number, number, number][] = [
 ];
 const SHAPE_TOTAL = SHAPES.reduce((s, [, , wgt]) => s + wgt, 0);
 
+/**
+ * How a block refracts what is behind it. The mix is what makes the reveal
+ * read as broken glass rather than a photo crop: mirrored shards, frosted
+ * panes and lens-magnified panels sitting alongside clear ones.
+ */
+type Material = "clear" | "mirror" | "frost" | "lens";
+
 type Module = {
   x: number;
   y: number;
   w: number;
   h: number;
   seed: number;
-  /** Render as one flat colour chunk instead of photo content. */
-  flat: boolean;
-  color: string;
+  material: Material;
   /** Stable sampling offset — this block shows a slice of somewhere else. */
   ox: number;
   oy: number;
@@ -61,10 +89,11 @@ type Module = {
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /**
- * Paints a red plate over a photo and "unglitches" it: irregular modular
- * blocks under the spotlight snap through to the image beneath, with
- * chromatic smear, flat posterised chunks, detached debris and tear bursts.
- * When the pointer goes quiet the spotlight keeps scanning on its own.
+ * Fractures a photo under the pointer. The image is the base layer; irregular
+ * modular panes under the spotlight re-sample it — mirrored, frosted,
+ * magnified or laterally refracted — so the picture breaks into glass where
+ * you look, then heals as the heat decays. When the pointer goes quiet the
+ * spotlight keeps scanning on its own.
  */
 export default function PixelUnglitch({
   src,
@@ -73,10 +102,25 @@ export default function PixelUnglitch({
   focus = [0.48, 0.3],
   anchor = [0.56, 0.42],
   zoom = 1.08,
+  mobileSrc,
+  mobileFocus,
+  mobileAnchor,
+  mobileZoom,
+  mobileMaxWidth = 640,
   className,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  const narrow = useNarrow(mobileMaxWidth);
+  const useMobile = narrow && !!mobileSrc;
+  const activeSrc = useMobile ? mobileSrc : src;
+  const activeFocus = (useMobile && mobileFocus) || focus;
+  const activeAnchor = (useMobile && mobileAnchor) || anchor;
+  const activeZoom = (useMobile && mobileZoom) || zoom;
+  // destructured so the dependency array stays statically checkable
+  const [focusX, focusY] = activeFocus;
+  const [anchorX, anchorY] = activeAnchor;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -90,7 +134,14 @@ export default function PixelUnglitch({
 
     // --- scene buffer (what lives under the red plate) ----------------------
     const scene = document.createElement("canvas");
-    const sctx = scene.getContext("2d", { willReadFrequently: true })!;
+    const sctx = scene.getContext("2d")!;
+
+    // tiny buffer used to fake a blur for frosted panes
+    const BLUR = 10;
+    const blur = document.createElement("canvas");
+    blur.width = BLUR;
+    blur.height = BLUR;
+    const blurCtx = blur.getContext("2d")!;
     let photo: HTMLImageElement | null = null;
 
     let w = 0;
@@ -147,11 +198,17 @@ export default function PixelUnglitch({
         const iw = photo.naturalWidth;
         const ih = photo.naturalHeight;
         // cover-fit plus a little zoom, then panned so `focus` lands on `anchor`
-        const scale = Math.max(w / iw, h / ih) * zoom;
+        const scale = Math.max(w / iw, h / ih) * activeZoom;
         const dw = iw * scale;
         const dh = ih * scale;
-        const dx = Math.min(0, Math.max(w - dw, anchor[0] * w - focus[0] * dw));
-        const dy = Math.min(0, Math.max(h - dh, anchor[1] * h - focus[1] * dh));
+        const dx = Math.min(
+          0,
+          Math.max(w - dw, anchorX * w - focusX * dw),
+        );
+        const dy = Math.min(
+          0,
+          Math.max(h - dh, anchorY * h - focusY * dh),
+        );
         sctx.fillStyle = "#05060f";
         sctx.fillRect(0, 0, w, h);
         sctx.drawImage(photo, dx, dy, dw, dh);
@@ -203,45 +260,25 @@ export default function PixelUnglitch({
             for (let x = cx; x < cx + mw; x++) taken[y * cols + x] = 1;
 
           const seed = Math.random();
+          const material: Material =
+            seed < 0.17
+              ? "mirror"
+              : seed < 0.3
+                ? "frost"
+                : seed < 0.46
+                  ? "lens"
+                  : "clear";
           next.push({
             x: cx * U,
             y: cy * U,
             w: mw * U,
             h: mh * U,
             seed,
-            flat: seed > 0.88,
-            color: RED,
+            material,
             // a few blocks pull their content from a neighbouring slice
             ox: seed > 0.8 && seed < 0.86 ? Math.round((seed - 0.83) * 90) * U : 0,
             oy: seed > 0.06 && seed < 0.1 ? Math.round((seed - 0.08) * 120) * U : 0,
           });
-        }
-      }
-
-      // Sample the scene so flat chunks are posterised from real content.
-      if (w > 0 && h > 0) {
-        const data = sctx.getImageData(0, 0, w, h).data;
-        for (const m of next) {
-          let r = 0;
-          let g = 0;
-          let b = 0;
-          let n = 0;
-          for (let sy = 0; sy < 3; sy++) {
-            for (let sx = 0; sx < 3; sx++) {
-              const px = Math.min(w - 1, Math.round(m.x + ((sx + 0.5) / 3) * m.w));
-              const py = Math.min(h - 1, Math.round(m.y + ((sy + 0.5) / 3) * m.h));
-              const i = (py * w + px) * 4;
-              r += data[i];
-              g += data[i + 1];
-              b += data[i + 2];
-              n++;
-            }
-          }
-          // push the average toward ink/navy so flats read as data blocks
-          const k = 0.55;
-          m.color = `rgb(${Math.round((r / n) * k)},${Math.round((g / n) * k)},${Math.round(
-            (b / n) * k + 12,
-          )})`;
         }
       }
 
@@ -277,7 +314,7 @@ export default function PixelUnglitch({
       }
     };
 
-    if (src) {
+    if (activeSrc) {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = () => {
@@ -285,7 +322,7 @@ export default function PixelUnglitch({
         paintScene();
         buildModules();
       };
-      img.src = src;
+      img.src = activeSrc;
     }
 
     const onMove = (e: PointerEvent) => {
@@ -380,10 +417,10 @@ export default function PixelUnglitch({
       }
 
       // --- draw --------------------------------------------------------------
+      // the photo is the base layer; panes are drawn over it
       ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = "source-over";
-      ctx.fillStyle = RED;
-      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(scene, 0, 0);
 
       for (let i = 0; i < modules.length; i++) {
         const v = heat[i];
@@ -400,14 +437,88 @@ export default function PixelUnglitch({
         const sy = Math.max(0, Math.min(h - m.h, m.y + m.oy));
 
         ctx.globalAlpha = a;
-        if (m.flat) {
-          ctx.fillStyle = m.color;
-          ctx.fillRect(m.x, m.y, m.w, m.h);
-        } else {
-          ctx.drawImage(scene, sx, sy, m.w, m.h, m.x, m.y, m.w, m.h);
+        switch (m.material) {
+          case "mirror": {
+            // reflected shard — the scene flipped inside the block
+            ctx.save();
+            ctx.translate(m.x + m.w, m.y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(scene, sx, sy, m.w, m.h, 0, 0, m.w, m.h);
+            ctx.restore();
+            break;
+          }
+          case "frost": {
+            // cheap blur: downsample into a tiny buffer, then scale it back up
+            blurCtx.clearRect(0, 0, BLUR, BLUR);
+            blurCtx.drawImage(scene, sx, sy, m.w, m.h, 0, 0, BLUR, BLUR);
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(blur, 0, 0, BLUR, BLUR, m.x, m.y, m.w, m.h);
+            ctx.imageSmoothingEnabled = false;
+            ctx.fillStyle = "rgba(255,255,255,0.1)";
+            ctx.fillRect(m.x, m.y, m.w, m.h);
+            break;
+          }
+          case "lens": {
+            // magnified pane — samples a smaller region across the same area
+            const k = 1 / 1.35;
+            ctx.imageSmoothingEnabled = true;
+            ctx.drawImage(
+              scene,
+              sx + (m.w * (1 - k)) / 2,
+              sy + (m.h * (1 - k)) / 2,
+              m.w * k,
+              m.h * k,
+              m.x,
+              m.y,
+              m.w,
+              m.h,
+            );
+            ctx.imageSmoothingEnabled = false;
+            break;
+          }
+          default: {
+            // clear pane — refracts laterally, so the picture steps sideways
+            const k = 5 + m.seed * 12;
+            ctx.drawImage(
+              scene,
+              Math.max(0, Math.min(w - m.w, sx + k)),
+              sy,
+              m.w,
+              m.h,
+              m.x,
+              m.y,
+              m.w,
+              m.h,
+            );
+          }
         }
 
-        // chromatic smear while a block is still resolving
+        // Travelling sheen: one light source raking across the whole cluster,
+        // so the panes read as a single sheet of glass catching it.
+        const sheen =
+          0.5 + 0.5 * Math.sin((m.x + m.y * 0.65) / 240 - now * 0.0007);
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = a * (0.03 + 0.09 * sheen * sheen * sheen);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(m.x, m.y, m.w, m.h);
+        ctx.globalCompositeOperation = "source-over";
+
+        // Bevel — only some panes catch a lit edge, and only on one axis, so
+        // the cluster reads as broken glass instead of a tiled wall.
+        if (m.seed > 0.38) {
+          ctx.globalAlpha = a * (0.3 + m.seed * 0.5);
+          ctx.fillStyle = "rgba(255,255,255,0.75)";
+          if (m.seed > 0.66) ctx.fillRect(m.x, m.y, m.w, 1);
+          else ctx.fillRect(m.x, m.y, 1, m.h);
+        }
+        if (m.seed < 0.5) {
+          ctx.globalAlpha = a * (0.15 + m.seed * 0.5);
+          ctx.fillStyle = "rgba(0,0,0,0.5)";
+          if (m.seed < 0.24) ctx.fillRect(m.x, m.y + m.h - 1, m.w, 1);
+          else ctx.fillRect(m.x + m.w - 1, m.y, 1, m.h);
+        }
+
+        // Refracted fringe while a pane is still resolving.
         if (!full) {
           ctx.globalCompositeOperation = "lighter";
           ctx.globalAlpha = 0.22;
@@ -422,8 +533,8 @@ export default function PixelUnglitch({
             m.w,
             m.h,
           );
-          ctx.fillStyle = m.seed > 0.5 ? "#4de2ff" : "#1b2ac9";
-          ctx.globalAlpha = 0.1;
+          ctx.fillStyle = m.seed > 0.5 ? "#bfefff" : "#8ab4ff";
+          ctx.globalAlpha = 0.12;
           ctx.fillRect(m.x, m.y, m.w, m.h);
           ctx.globalCompositeOperation = "source-over";
         }
@@ -439,8 +550,7 @@ export default function PixelUnglitch({
       window.removeEventListener("pointermove", onMove);
       wrap.removeEventListener("pointerleave", onLeave);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, unit, radius, zoom, focus[0], focus[1], anchor[0], anchor[1]]);
+  }, [activeSrc, unit, radius, activeZoom, focusX, focusY, anchorX, anchorY]);
 
   return (
     <div ref={wrapRef} className={className}>

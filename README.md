@@ -39,18 +39,26 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Hero: pixel-unglitch
 
-The hero ([src/components/Hero.tsx](src/components/Hero.tsx)) paints a solid red
-plate over `public/assets/background.png` and dissolves it block by block.
+The hero ([src/components/Hero.tsx](src/components/Hero.tsx)) shows
+`public/assets/wallpaper.jpg` full-bleed and fractures it under the pointer.
 
-- **[PixelUnglitch.tsx](src/components/PixelUnglitch.tsx)** — canvas. The grid is
-  tiled once per resize by a greedy random walk that drops variable-size
-  rectangles (1×1 up to 6×2 units), so blocks interlock at irregular sizes
-  instead of forming a uniform mosaic. A spotlight raises per-module "heat";
-  heat decays every frame, so the reveal trails and reseals. Modules snap to
-  full opacity through a thin translucent fringe, a slice of them render as flat
-  posterised chunks sampled from the photo, a few pull content from a
-  neighbouring slice, and random tear bursts rip horizontal bands sideways near
-  the spotlight. Detached debris blocks pop just outside it.
+- **[PixelUnglitch.tsx](src/components/PixelUnglitch.tsx)** — canvas. The photo
+  is the base layer; panes are drawn over it. The grid is tiled once per resize
+  by a greedy random walk that drops variable-size rectangles (1×1 up to 6×2
+  units), so panes interlock at irregular sizes instead of forming a uniform
+  mosaic. A spotlight raises per-module "heat"; heat decays every frame, so the
+  fracture trails the pointer and then heals. Panes reach full strength through
+  a thin refracted fringe, a few sample a neighbouring slice, and random tear
+  bursts rip horizontal bands sideways near the spotlight. Detached shards pop
+  just outside it.
+- **Glass materials** — each block is assigned one of four materials at build
+  time: `mirror` flips the scene inside the pane, `frost` fakes a blur by
+  round-tripping through a 10×10 buffer and adds a white veil, `lens`
+  magnifies by sampling a smaller region across the same area, and `clear`
+  refracts laterally so the picture steps sideways. Every pane then gets a raking sheen driven by
+  `(x + y·0.65)` against time, so the whole cluster catches one light source,
+  plus a bevel on one axis only — lit or shadowed depending on its seed, so the
+  edges never line up into a tile grid.
 - **Idle autoplay** — after 1.2s without pointer movement the spotlight drives
   itself along a wandering path over the subject's face, with more frequent
   tear bursts. Any pointer move takes control back.
@@ -70,24 +78,27 @@ plate over `public/assets/background.png` and dissolves it block by block.
 />
 ```
 
-`unit` and `radius` scale down automatically on narrow viewports. Swapping the
-photo is just a new `src` — retune `focus` to whatever the subject is. With no
-`src` it renders a procedural neon scene instead.
+`unit` and `radius` scale down automatically on narrow viewports. At or below
+`mobileMaxWidth` (640px by default) the component swaps to `mobileSrc` with its
+own `mobileFocus` / `mobileAnchor` / `mobileZoom`, so the portrait crop gets its
+own framing rather than a cover-fit of the wide art. The breakpoint resolves on
+the first client render, so a phone only ever fetches the portrait file.
+Swapping either photo is just a new `src` — retune `focus` to whatever the
+subject is. With no `src` it renders a procedural neon scene instead.
 
-### Headline
+### Word mark
 
-A two-column, two-row grid fills the space under the eyebrow: **EXPLORE THE /
-Glitch →** sits top-left of the subject, **QUESTION / Everything** bottom-right
-of her, so the reveal reads as the thing between them. Each pair sets its first
-line in the sans (Geist, black, uppercase) and its second in italic
-[Playfair Display](https://fonts.google.com/specimen/Playfair+Display) — loaded
-through `next/font` and exposed as the `font-display` utility. Below `sm` the
-grid collapses to one column and the halves stack. A centred "scroll down"
-label anchors the bottom of the hero.
+The hero carries one word: **DECODED**, set in Asthetic Pixel — the OTF in
+`public/assets`, self-hosted through `next/font/local` in
+[layout.tsx](src/app/layout.tsx) and exposed as the `font-pixel` utility. It is
+sized `clamp(3.5rem, 17vw, 15rem)` in `--yellow` with a hard offset shadow, and
+sits bottom-aligned in the hero with the glass panes fracturing the photo
+behind and through it.
 
-Note: `.glitch` sets `display: inline-block` inside `@layer components`, so
-Tailwind display utilities (`block`, `flex`, …) still win over it — needed for
-the stacked lines in the logo and headline.
+The file is the **Demo** cut of the family, which is normally personal-use
+only — check the licence before this ships commercially. No `font-bold` is
+applied: the face has one weight and synthetic bold would smear the pixel
+grid.
 
 **[GlitchNav.tsx](src/components/GlitchNav.tsx)** — fixed nav. Each label is a
 `.glitch` element that renders two chromatic ghosts via `::before` / `::after`,
