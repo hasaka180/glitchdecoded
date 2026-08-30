@@ -331,6 +331,17 @@ export default function PixelUnglitch({
     ro.observe(wrap);
     resize();
 
+    // iOS suspends rAF when the tab is backgrounded and restores pages from
+    // the back/forward cache without re-running effects — re-measure and reset
+    // the clock on the way back so the loop picks up cleanly.
+    const onResume = () => {
+      if (document.hidden) return;
+      last = performance.now();
+      resize();
+    };
+    document.addEventListener("visibilitychange", onResume);
+    window.addEventListener("pageshow", onResume);
+
     /** Rip a horizontal band open and slide it sideways. */
     const burst = (idle: boolean) => {
       // keep tears near the spotlight so they read as part of the cluster
@@ -356,13 +367,22 @@ export default function PixelUnglitch({
       const dt = Math.min((now - last) / 16.667, 3);
       last = now;
 
-      const idle = !reduced && (coarse || now - lastMove > IDLE_AFTER);
+      // a first measure at zero size leaves no panes — re-measure until it takes
+      if (modules.length === 0) {
+        resize();
+        return;
+      }
+
+      const idle = coarse || now - lastMove > IDLE_AFTER;
 
       if (idle) {
-        const t = (now / 1000) * (coarse ? 1.5 : 1);
+        // Reduce Motion keeps the scan — freezing it leaves the hero dead
+        // until something is touched — but slows it right down and drops the
+        // tears and debris below.
+        const t = (now / 1000) * (reduced ? 0.35 : coarse ? 1.5 : 1);
         drift.x = lerp(drift.x, 0, 0.04 * dt);
         drift.y = lerp(drift.y, 0, 0.04 * dt);
-        const amp = coarse ? 1.5 : 1;
+        const amp = reduced ? 0.7 : coarse ? 1.5 : 1;
         target.x =
           w *
             (0.52 +
@@ -377,13 +397,13 @@ export default function PixelUnglitch({
           drift.y;
       }
 
-      const ease = idle ? (coarse ? 0.08 : 0.045) : 0.2;
+      const ease = idle ? (reduced ? 0.025 : coarse ? 0.08 : 0.045) : 0.2;
       smooth.x = lerp(smooth.x, target.x, Math.min(1, ease * dt));
       smooth.y = lerp(smooth.y, target.y, Math.min(1, ease * dt));
 
       const decay = Math.pow(0.94, dt);
       const shiftDecay = Math.pow(0.86, dt);
-      const active = hasPointer || idle || reduced;
+      const active = hasPointer || idle;
 
       for (let i = 0; i < modules.length; i++) {
         heat[i] *= decay;
@@ -548,6 +568,8 @@ export default function PixelUnglitch({
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      document.removeEventListener("visibilitychange", onResume);
+      window.removeEventListener("pageshow", onResume);
       window.removeEventListener("pointermove", onMove);
       wrap.removeEventListener("pointerleave", onLeave);
     };

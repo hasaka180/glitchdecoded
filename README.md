@@ -39,7 +39,9 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Hero: pixel-unglitch
 
-The hero ([src/components/Hero.tsx](src/components/Hero.tsx)) shows
+The hero ([src/components/Hero.tsx](src/components/Hero.tsx)) is `100lvh` —
+the viewport with mobile browser chrome retracted, a little taller than `svh`
+without overflowing the screen. It shows
 `public/assets/wallpaper.jpg` full-bleed and fractures it under the pointer.
 
 - **[PixelUnglitch.tsx](src/components/PixelUnglitch.tsx)** — canvas. The photo
@@ -67,8 +69,11 @@ The hero ([src/components/Hero.tsx](src/components/Hero.tsx)) shows
   wider cluster (`w * 0.5` rather than `w * 0.4`). Tear bursts and debris go
   the other way there — rarer than on desktop — so the travelling scan reads as
   a sweep instead of random popping.
-- **Reduced motion** — `prefers-reduced-motion` disables autoplay, bursts,
-  debris and every glitch keyframe.
+- **Reduced motion** — `prefers-reduced-motion` keeps the scan but slows it to
+  a drift (0.35× speed, 0.7× amplitude) and drops the tear bursts, the debris
+  and every CSS keyframe. It deliberately does not freeze: with the scan gated
+  off entirely the hero sat dead until something was touched, which reads as a
+  broken page rather than a calm one.
 
 ### Props
 
