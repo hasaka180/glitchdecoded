@@ -63,8 +63,10 @@ The hero ([src/components/Hero.tsx](src/components/Hero.tsx)) shows
   itself along a wandering path over the subject, with more frequent tear
   bursts. Any pointer move takes control back. On coarse-pointer devices
   (`pointer: coarse`) there is no hovering pointer to wait for, so the scan
-  never yields: it runs from load, 1.8× faster, with 1.5× the amplitude and
-  bursts roughly twice as often, since it is the only motion on offer.
+  never yields: it runs from load, 1.5× faster, with 1.5× the amplitude and a
+  wider cluster (`w * 0.5` rather than `w * 0.4`). Tear bursts and debris go
+  the other way there — rarer than on desktop — so the travelling scan reads as
+  a sweep instead of random popping.
 - **Reduced motion** — `prefers-reduced-motion` disables autoplay, bursts,
   debris and every glitch keyframe.
 

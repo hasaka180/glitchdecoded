@@ -14,9 +14,9 @@ export default function Hero() {
         anchor={[0.56, 0.46]}
         zoom={1.15}
         mobileSrc="/assets/wallpapermob.jpg"
-        mobileFocus={[0.52, 0.52]}
-        mobileAnchor={[0.5, 0.44]}
-        mobileZoom={1.02}
+        mobileFocus={[0.5, 0.38]}
+        mobileAnchor={[0.5, 0.42]}
+        mobileZoom={1}
       />
 
       {/* light sweep */}
@@ -37,7 +37,7 @@ export default function Hero() {
 
           {/* phone: a fitted line each */}
           <div aria-hidden className="sm:hidden">
-            <FitText className="leading-[0.8] text-[color:var(--bone)]">
+            <FitText className="leading-[0.8] text-[color:var(--yellow)]">
               <span className="font-signature">Glitch</span>
             </FitText>
             <FitText className="mt-2 leading-[0.85] text-[color:var(--yellow)]">
@@ -47,8 +47,8 @@ export default function Hero() {
 
           {/* wide: both words on one fitted line */}
           <div aria-hidden className="hidden sm:block">
-            <FitText className="leading-[0.85]">
-              <span className="font-signature text-[1.15em] text-[color:var(--bone)]">
+            <FitText className="leading-[0.85] text-[color:var(--yellow)]">
+              <span className="font-signature text-[0.95em]">
                 Glitch
               </span>{" "}
               <span className="font-pixel tracking-[-0.01em] text-[color:var(--yellow)]">

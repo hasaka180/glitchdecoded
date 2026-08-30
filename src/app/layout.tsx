@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Playfair_Display, Sacramento } from "next/font/google";
+import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -31,10 +31,11 @@ const astheticPixel = localFont({
 });
 
 // Handwritten signature that runs ahead of the bitmap word.
-const sacramento = Sacramento({
-  variable: "--font-sacramento",
-  subsets: ["latin"],
-  weight: ["400"],
+const paquthy = localFont({
+  src: "../../public/assets/paquthy.otf",
+  variable: "--font-paquthy",
+  display: "swap",
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -47,7 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${astheticPixel.variable} ${sacramento.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} ${astheticPixel.variable} ${paquthy.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

@@ -289,7 +289,7 @@ export default function PixelUnglitch({
       ctx.imageSmoothingEnabled = false;
 
       U = Math.max(12, Math.min(unit, Math.round(w / 26)));
-      R = Math.min(radius, w * 0.4, h * 0.5);
+      R = Math.min(radius, w * (coarse ? 0.5 : 0.4), h * 0.5);
 
       scene.width = w;
       scene.height = h;
@@ -359,7 +359,7 @@ export default function PixelUnglitch({
       const idle = !reduced && (coarse || now - lastMove > IDLE_AFTER);
 
       if (idle) {
-        const t = (now / 1000) * (coarse ? 1.8 : 1);
+        const t = (now / 1000) * (coarse ? 1.5 : 1);
         drift.x = lerp(drift.x, 0, 0.04 * dt);
         drift.y = lerp(drift.y, 0, 0.04 * dt);
         const amp = coarse ? 1.5 : 1;
@@ -399,17 +399,21 @@ export default function PixelUnglitch({
         if (d < 1) {
           const v = (1 - d * d) ** 1.25 * (0.72 + m.seed * 0.5);
           if (v > heat[i]) heat[i] = Math.min(1, v);
-        } else if (!reduced && d < 1.45 && Math.random() < 0.005 * (1.45 - d)) {
+        } else if (
+          !reduced &&
+          d < 1.45 &&
+          Math.random() < (coarse ? 0.002 : 0.005) * (1.45 - d)
+        ) {
           // detached debris orbiting the cluster
           heat[i] = Math.max(heat[i], 0.55 + Math.random() * 0.45);
         }
       }
 
       if (!reduced && now > nextBurst) {
-        const gap = coarse ? 150 : 260;
-        nextBurst =
-          now + (idle ? gap + Math.random() * 420 : 700 + Math.random() * 1400);
-        const count = idle ? 1 + ((Math.random() * 3) | 0) : 1;
+        nextBurst = coarse
+          ? now + 900 + Math.random() * 1300
+          : now + (idle ? 260 + Math.random() * 520 : 700 + Math.random() * 1400);
+        const count = idle && !coarse ? 1 + ((Math.random() * 3) | 0) : 1;
         for (let k = 0; k < count; k++) burst(idle);
       }
 
