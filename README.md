@@ -60,8 +60,11 @@ The hero ([src/components/Hero.tsx](src/components/Hero.tsx)) shows
   plus a bevel on one axis only — lit or shadowed depending on its seed, so the
   edges never line up into a tile grid.
 - **Idle autoplay** — after 1.2s without pointer movement the spotlight drives
-  itself along a wandering path over the subject's face, with more frequent
-  tear bursts. Any pointer move takes control back.
+  itself along a wandering path over the subject, with more frequent tear
+  bursts. Any pointer move takes control back. On coarse-pointer devices
+  (`pointer: coarse`) there is no hovering pointer to wait for, so the scan
+  never yields: it runs from load, 1.8× faster, with 1.5× the amplitude and
+  bursts roughly twice as often, since it is the only motion on offer.
 - **Reduced motion** — `prefers-reduced-motion` disables autoplay, bursts,
   debris and every glitch keyframe.
 
@@ -88,12 +91,27 @@ subject is. With no `src` it renders a procedural neon scene instead.
 
 ### Word mark
 
-The hero carries one word: **DECODED**, set in Asthetic Pixel — the OTF in
+The hero carries a two-face lockup: **Glitch** in
+[Sacramento](https://fonts.google.com/specimen/Sacramento) followed by
+**DECODED** in Asthetic Pixel — the OTF in
 `public/assets`, self-hosted through `next/font/local` in
 [layout.tsx](src/app/layout.tsx) and exposed as the `font-pixel` utility. It is
 sized `clamp(3.5rem, 17vw, 15rem)` in `--yellow` with a hard offset shadow, and
 sits bottom-aligned in the hero with the glass panes fracturing the photo
 behind and through it.
+
+[FitText.tsx](src/components/FitText.tsx) scales each line so it spans its
+container exactly: it measures at a fixed 100px, then sets the size to
+`100 * available / measured`. Children size themselves in `em`, so the mixed
+faces scale as a unit. It refits on `document.fonts.ready` (web fonts land
+after the first measure) and on resize, ignoring the observer callbacks its own
+size change triggers.
+
+Both layouts — one fitted line on `sm`+, two stacked fitted lines below — live
+in the DOM and are toggled with CSS. Choosing between them in JS from a media
+query diverges from the server render and trips hydration; the visible one is
+picked by the stylesheet, and an `sr-only` span carries the text for assistive
+tech since both variants are `aria-hidden`.
 
 The file is the **Demo** cut of the family, which is normally personal-use
 only — check the licence before this ships commercially. No `font-bold` is

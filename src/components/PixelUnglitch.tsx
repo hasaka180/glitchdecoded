@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+
+import { useNarrow } from "@/lib/useNarrow";
 
 type Props = {
-  /** Photo revealed under the red plate. Falls back to a procedural neon scene. */
+  /** Photo to fracture. Falls back to a procedural neon scene. */
   src?: string;
   /** Base grid unit in CSS px — modules are multiples of this. */
   unit?: number;
@@ -25,28 +27,11 @@ type Props = {
   className?: string;
 };
 
-/** Tracks a max-width media query, resolved on the first client render. */
-function useNarrow(maxWidth: number) {
-  const [narrow, setNarrow] = useState(() =>
-    typeof window === "undefined"
-      ? false
-      : window.matchMedia(`(max-width: ${maxWidth}px)`).matches,
-  );
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${maxWidth}px)`);
-    const on = () => setNarrow(mq.matches);
-    on();
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, [maxWidth]);
-  return narrow;
-}
-
 const IDLE_AFTER = 1200; // ms of stillness before the hero drives itself
 
 /**
  * Module shapes, in grid units, with weights. Small squares dominate; the
- * larger slabs are what give the reveal its irregular, chunky silhouette.
+ * larger slabs are what give the fracture its irregular, chunky silhouette.
  */
 const SHAPES: [number, number, number][] = [
   [1, 1, 7],
@@ -131,6 +116,9 @@ export default function PixelUnglitch({
     if (!ctx) return;
 
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // touch devices have no hovering pointer to wait for, so the scan just
+    // runs — wider and quicker, since it is the only motion on offer
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
 
     // --- scene buffer (what lives under the red plate) ----------------------
     const scene = document.createElement("canvas");
@@ -368,21 +356,28 @@ export default function PixelUnglitch({
       const dt = Math.min((now - last) / 16.667, 3);
       last = now;
 
-      const idle = !reduced && now - lastMove > IDLE_AFTER;
+      const idle = !reduced && (coarse || now - lastMove > IDLE_AFTER);
 
       if (idle) {
-        const t = now / 1000;
+        const t = (now / 1000) * (coarse ? 1.8 : 1);
         drift.x = lerp(drift.x, 0, 0.04 * dt);
         drift.y = lerp(drift.y, 0, 0.04 * dt);
+        const amp = coarse ? 1.5 : 1;
         target.x =
-          w * (0.56 + 0.24 * Math.sin(t * 0.29) + 0.08 * Math.sin(t * 0.77 + 1.2)) +
+          w *
+            (0.52 +
+              0.24 * amp * Math.sin(t * 0.29) +
+              0.08 * Math.sin(t * 0.77 + 1.2)) +
           drift.x;
         target.y =
-          h * (0.36 + 0.12 * Math.cos(t * 0.23) + 0.06 * Math.sin(t * 0.59 + 0.4)) +
+          h *
+            (0.4 +
+              0.16 * amp * Math.cos(t * 0.23) +
+              0.06 * Math.sin(t * 0.59 + 0.4)) +
           drift.y;
       }
 
-      const ease = idle ? 0.045 : 0.2;
+      const ease = idle ? (coarse ? 0.08 : 0.045) : 0.2;
       smooth.x = lerp(smooth.x, target.x, Math.min(1, ease * dt));
       smooth.y = lerp(smooth.y, target.y, Math.min(1, ease * dt));
 
@@ -411,7 +406,9 @@ export default function PixelUnglitch({
       }
 
       if (!reduced && now > nextBurst) {
-        nextBurst = now + (idle ? 260 + Math.random() * 520 : 700 + Math.random() * 1400);
+        const gap = coarse ? 150 : 260;
+        nextBurst =
+          now + (idle ? gap + Math.random() * 420 : 700 + Math.random() * 1400);
         const count = idle ? 1 + ((Math.random() * 3) | 0) : 1;
         for (let k = 0; k < count; k++) burst(idle);
       }

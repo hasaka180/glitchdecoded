@@ -28,6 +28,7 @@
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-playfair);
   --font-pixel: var(--font-pixel-face);
+  --font-signature: var(--font-sacramento);
 }
 
 html,
@@ -83,15 +84,7 @@ body {
   text-shadow: -1px 0 var(--blue);
 }
 
-/* Idle: a rare, short twitch so the chrome feels alive but not seizure-y. */
-.glitch::before {
-  animation: glitch-ghost-a 6s steps(2, end) var(--glitch-delay, 0s) infinite;
-}
-.glitch::after {
-  animation: glitch-ghost-b 6s steps(2, end) var(--glitch-delay, 0s) infinite;
-}
-
-/* Hover / focus: crank it up. */
+/* Text never moves on its own — the ghosts only appear on hover / focus. */
 .glitch:hover::before,
 .glitch:focus-visible::before {
   animation: glitch-ghost-a 0.45s steps(2, end) infinite;
@@ -100,11 +93,6 @@ body {
 .glitch:focus-visible::after {
   animation: glitch-ghost-b 0.45s steps(2, end) infinite;
 }
-.glitch:hover,
-.glitch:focus-visible {
-  animation: glitch-shake 0.45s steps(2, end) infinite;
-}
-
 @keyframes glitch-ghost-a {
   0%,
   92%,
@@ -155,22 +143,6 @@ body {
   }
 }
 
-@keyframes glitch-shake {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  25% {
-    transform: translate3d(-1px, 1px, 0);
-  }
-  50% {
-    transform: translate3d(1px, -1px, 0);
-  }
-  75% {
-    transform: translate3d(-1px, 0, 0);
-  }
-}
-
 /* Scanline + noise film laid over the whole hero. */
 .scanlines::after {
   content: "";
@@ -212,7 +184,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .glitch::before,
   .glitch::after,
-  .glitch:hover,
   .sweep {
     animation: none !important;
   }

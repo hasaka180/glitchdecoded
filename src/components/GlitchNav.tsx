@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
 const LINKS = [
   "Home",
@@ -38,24 +38,6 @@ export default function GlitchNav() {
       </div>
 
       <nav className="mx-auto flex h-20 max-w-[1500px] items-center justify-between px-5 sm:px-10">
-        {/* Each line is its own .glitch so the chromatic ghosts line up. */}
-        <a href="#" className="block font-mono leading-[1.15]">
-          <span
-            className="glitch block text-[13px] font-bold tracking-[0.26em] uppercase"
-            data-text="A GLITCH"
-            style={{ "--glitch-delay": "0s" } as CSSProperties}
-          >
-            A GLITCH
-          </span>
-          <span
-            className="glitch block text-[13px] font-bold tracking-[0.26em] uppercase"
-            data-text="IN THE MATRIX"
-            style={{ "--glitch-delay": "0.35s" } as CSSProperties}
-          >
-            IN THE MATRIX
-          </span>
-        </a>
-
         <ul className="hidden items-center gap-3 lg:flex">
           {LINKS.map((label, i) => (
             <li key={label} className="flex items-center gap-3">
@@ -63,7 +45,6 @@ export default function GlitchNav() {
                 href={`#${label.toLowerCase().replace(/\s+/g, "-")}`}
                 className="glitch font-mono text-[11px] tracking-[0.2em] uppercase opacity-90 transition-opacity hover:opacity-100"
                 data-text={label}
-                style={{ "--glitch-delay": `${i * 0.9 + 1.4}s` } as CSSProperties}
               >
                 {label}
               </a>
@@ -76,12 +57,11 @@ export default function GlitchNav() {
           ))}
         </ul>
 
-        <div className="flex items-center gap-4">
+        <div className="ml-auto flex items-center gap-4">
           <a
             href="#submit"
             className="glitch hidden border border-white/70 px-4 py-2 font-mono text-[11px] tracking-[0.2em] uppercase transition-colors hover:bg-white hover:text-[color:var(--red)] sm:inline-block"
             data-text="Submit a glitch →"
-            style={{ "--glitch-delay": "3.2s" } as CSSProperties}
           >
             Submit a glitch →
           </a>
@@ -105,14 +85,13 @@ export default function GlitchNav() {
 
       {open && (
         <ul className="border-t border-white/20 bg-[color:var(--ink)]/95 px-5 py-4 lg:hidden">
-          {LINKS.map((label, i) => (
+          {LINKS.map((label) => (
             <li key={label} className="py-2">
               <a
                 href={`#${label.toLowerCase().replace(/\s+/g, "-")}`}
                 onClick={() => setOpen(false)}
                 className="glitch font-mono text-sm tracking-[0.2em] uppercase"
                 data-text={label}
-                style={{ "--glitch-delay": `${i * 0.7}s` } as CSSProperties}
               >
                 {label}
               </a>
