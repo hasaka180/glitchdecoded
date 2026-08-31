@@ -1,22 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
-/** Tracks a max-width media query, resolved on the first client render. */
+/**
+ * Tracks a max-width media query.
+ *
+ * useSyncExternalStore rather than useState + useEffect: the server has no
+ * viewport, so a lazy matchMedia initialiser makes the first client render
+ * disagree with the server HTML and React reports a hydration mismatch. This
+ * hydrates against the server snapshot, then syncs.
+ */
 export function useNarrow(maxWidth: number) {
-  const [narrow, setNarrow] = useState(() =>
-    typeof window === "undefined"
-      ? false
-      : window.matchMedia(`(max-width: ${maxWidth}px)`).matches,
+  const query = `(max-width: ${maxWidth}px)`;
+
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      const mq = window.matchMedia(query);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    [query],
   );
 
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${maxWidth}px)`);
-    const on = () => setNarrow(mq.matches);
-    on();
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, [maxWidth]);
-
-  return narrow;
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
 }

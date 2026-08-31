@@ -125,6 +125,64 @@ only — check the licence before this ships commercially. No `font-bold` is
 applied: the face has one weight and synthetic bold would smear the pixel
 grid.
 
+### Editor's note
+
+The second section ([EditorsNote.tsx](src/components/EditorsNote.tsx)) is a
+scroll-driven stage on white stock, in three acts:
+
+1. **Written.** As the section climbs from the hero, its three statement lines
+   ink themselves in turn — Asthetic Pixel in red, large and centred on the
+   page.
+2. **Travelled.** Once the section pins, the statement scales down and moves
+   into the left column.
+3. **Arrived.** The animated shelter illustration and the Cormorant Garamond
+   prose fade up in sequence, each block on its own slice of progress.
+
+The stage is a `280vh` runway with a `100lvh` sticky child. Two progress values
+drive everything: `approach` (0 when the section's top sits at the bottom of
+the viewport, 1 when it reaches the top) writes the lines; `progress` (position
+within the pinned runway) drives the travel and the arrivals. Scroll and resize
+are read inside a `requestAnimationFrame` callback, never synchronously in an
+effect body.
+
+Both media-query hooks use `useSyncExternalStore` with a `false` server
+snapshot. A lazy `matchMedia` initialiser in `useState` makes the first client
+render disagree with the server HTML, and since `staged` changes the markup,
+that surfaced as a hydration mismatch on phones.
+
+The centring is expressed as a delta from the statement's resting layout: the
+transform is cleared, the box measured, and the opening position derived as
+`stageCentre − boxCentre` with a scale constrained on *both* axes — width alone
+lets six lines of script run off the top and bottom. Because the hand is a
+local OTF whose metrics land after first paint, the element is watched with a
+`ResizeObserver` and re-measured on `document.fonts.ready`; measuring once on
+mount leaves the centring visibly off.
+
+The title flies in a character at a time: each glyph is its own span, dropped
+half an em and rotated, settling as the sequence reaches it. Characters carry a
+running index across all three lines so the wave reads continuously, with about
+six in flight at once.
+
+Two paths drive it. With a runway (desktop) the sequence is scrubbed off scroll
+position, keyed to the title's own rectangle rather than the section's — keyed
+to the section, the letters finished arriving while still below the fold. Below
+`md` there is no runway, so the same transforms run as a CSS transition with a
+per-character delay, started by an `IntersectionObserver`; the illustration and
+then the prose follow on their own delays, so the order reads title →
+illustration → prose either way. Under `prefers-reduced-motion` everything is
+in place from the start.
+
+The paper is generated, not shipped: `.paper` lays a `feTurbulence` tile over
+`--paper`, so the grain costs nothing and tiles seamlessly via `stitchTiles`.
+
+Two edits were made to `umbrella-animated.svg` so it could sit on white: its
+beige backing plate is now `fill="none"`, and its internal grain overlay — a
+full-box filtered rect at 0.24 multiply — was removed. That overlay read as
+paper on beige but as a grey square on white. Re-exporting the asset brings
+both back. It stays a plain `<img>`: the file carries its own CSS keyframes,
+and the image optimiser would strip or rasterise them. It is the one element
+that never fades in.
+
 **[GlitchNav.tsx](src/components/GlitchNav.tsx)** — fixed nav. Each label is a
 `.glitch` element that renders two chromatic ghosts via `::before` / `::after`,
 twitching rarely on a staggered delay and hard on hover/focus.

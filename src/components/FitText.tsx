@@ -38,12 +38,18 @@ export default function FitText({ children, max = 900, className }: Props) {
     };
 
     fit(true);
-    // the faces load async — remeasure once they land
-    document.fonts.ready.then(() => fit(true));
+    // the faces load async — remeasure once they land (guarded: the Font
+    // Loading API is not universal)
+    document.fonts?.ready?.then(() => fit(true));
+    // and once more after a beat, in case that promise resolved early
+    const t = setTimeout(() => fit(true), 600);
 
     const ro = new ResizeObserver(() => fit());
     ro.observe(wrap);
-    return () => ro.disconnect();
+    return () => {
+      clearTimeout(t);
+      ro.disconnect();
+    };
   }, [children, max]);
 
   return (

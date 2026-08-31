@@ -361,9 +361,21 @@ export default function PixelUnglitch({
 
     let raf = 0;
     let last = performance.now();
+    let frames = 0;
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
+      frames++;
+      if (frames % 5 === 0) {
+        (window as unknown as { __glitch?: unknown }).__glitch = {
+          frames,
+          size: `${w}x${h}`,
+          panes: modules.length,
+          photo: !!photo,
+          reduced,
+          coarse,
+        };
+      }
       const dt = Math.min((now - last) / 16.667, 3);
       last = now;
 
@@ -438,10 +450,14 @@ export default function PixelUnglitch({
       }
 
       // --- draw --------------------------------------------------------------
-      // the photo is the base layer; panes are drawn over it
-      ctx.globalAlpha = 1;
-      ctx.globalCompositeOperation = "source-over";
-      ctx.drawImage(scene, 0, 0);
+      // the photo is the base layer; panes are drawn over it. WebKit throws on
+      // degenerate drawImage arguments where Chrome shrugs, so one bad pane
+      // must not take the whole loop down with it.
+      if (scene.width < 1 || scene.height < 1) return;
+      try {
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.drawImage(scene, 0, 0);
 
       for (let i = 0; i < modules.length; i++) {
         const v = heat[i];
@@ -560,7 +576,12 @@ export default function PixelUnglitch({
           ctx.globalCompositeOperation = "source-over";
         }
       }
-      ctx.globalAlpha = 1;
+        ctx.globalAlpha = 1;
+      } catch (err) {
+        (window as unknown as { __glitch?: unknown }).__glitch = {
+          drawError: String(err),
+        };
+      }
     };
 
     raf = requestAnimationFrame(frame);

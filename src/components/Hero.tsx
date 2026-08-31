@@ -60,7 +60,7 @@ export default function Hero() {
       </div>
 
       <a
-        href="#work"
+        href="#note"
         className="absolute inset-x-0 bottom-7 z-10 mx-auto flex w-fit flex-col items-center gap-2 text-white/85 transition-opacity hover:opacity-100"
       >
         <span className="font-mono text-[10px] tracking-[0.34em] uppercase">

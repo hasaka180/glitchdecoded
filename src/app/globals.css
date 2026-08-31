@@ -8,6 +8,9 @@
   --bone: #f4f4f5;
   --cyan: #4de2ff;
   --yellow: #efe87b;
+  --paper: #fbfaf8;
+  --script-red: #c8392a;
+  --ink-brown: #2b2118;
   --blue: #1b2ac9;
 
   --background: var(--ink);
@@ -23,12 +26,17 @@
   --color-bone: var(--bone);
   --color-cyan: var(--cyan);
   --color-yellow: var(--yellow);
+  --color-paper: var(--paper);
+  --color-script-red: var(--script-red);
+  --color-ink-brown: var(--ink-brown);
   --color-blue: var(--blue);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-playfair);
   --font-pixel: var(--font-pixel-face);
   --font-signature: var(--font-paquthy);
+  --font-garamond: var(--font-cormorant);
+  --font-arial: Arial, Helvetica, sans-serif;
 }
 
 html,
@@ -191,4 +199,47 @@ body {
   .glitch::after {
     opacity: 0;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Title fly-in
+   Characters are individually transformed, so they settle in sequence rather
+   than the line appearing at once. Desktop scrubs the sequence off scroll
+   position; below md there is no runway to scrub, so the same transforms are
+   run as a transition with a per-character delay.
+--------------------------------------------------------------------------- */
+
+.fly-char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+.fly-timed .fly-char,
+.fly-timed .fly-block {
+  transition:
+    transform 0.62s cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 0.62s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fly-timed .fly-char,
+  .fly-timed .fly-block {
+    transition: none;
+  }
+}
+
+/* White stock with a little tooth — grain generated rather than shipped, so it
+   costs nothing and tiles seamlessly (stitchTiles). */
+.paper {
+  background-color: var(--paper);
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'>\
+<filter id='n' x='0' y='0' width='100%25' height='100%25'>\
+<feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/>\
+<feColorMatrix type='saturate' values='0'/>\
+</filter>\
+<rect width='240' height='240' filter='url(%23n)' opacity='0.5'/>\
+</svg>");
+  background-size: 240px 240px;
+  background-repeat: repeat;
 }
