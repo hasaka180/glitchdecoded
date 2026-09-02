@@ -26,26 +26,41 @@ const TITLE = (() => {
 
 /** How many characters are in flight at once. */
 const FLY_SOFTNESS = 6;
+/** The title's top must rise above this fraction of the viewport to start. */
+const FLY_START = 0.62;
+/** …and the sequence runs out over this much more of the viewport. */
+const FLY_SPAN = 0.52;
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 /** Ease so the travel settles rather than stopping dead. */
 const ease = (t: number) => 1 - Math.pow(1 - t, 3);
 
-export default function EditorsNote() {
+type Props = {
+  /**
+   * When set, a parent stage owns the scroll maths and this renders as a
+   * plain full-height panel rather than carrying its own runway.
+   */
+  drive?: { progress: number; approach: number };
+};
+
+export default function EditorsNote({ drive }: Props = {}) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const scriptRef = useRef<HTMLDivElement | null>(null);
 
   const narrow = useNarrow(768);
   const reduced = useReducedMotion();
-  const [progress, setProgress] = useState(0);
+  const [ownProgress, setOwnProgress] = useState(0);
   const [live, setLive] = useState(false);
   // how far the section has climbed the viewport — drives the writing
-  const [approach, setApproach] = useState(0);
+  const [ownApproach, setOwnApproach] = useState(0);
   // where the statement has to go, and how big it starts, to sit centred
   const [hero, setHero] = useState({ dx: 0, dy: 0, scale: 1 });
 
-  const staged = !narrow && !reduced;
+  const driven = !!drive;
+  const staged = driven || (!narrow && !reduced);
+  const progress = drive ? drive.progress : ownProgress;
+  const approach = drive ? drive.approach : ownApproach;
 
   /**
    * Measure with the transform cleared: the element's laid-out box is its
@@ -74,7 +89,7 @@ export default function EditorsNote() {
   // Without a scroll runway the sequence runs on a timer instead, kicked off
   // when the section comes into view.
   useEffect(() => {
-    if (staged) return;
+    if (staged || driven) return;
     const section = sectionRef.current;
     if (!section) return;
     if (typeof IntersectionObserver === "undefined") {
@@ -94,10 +109,32 @@ export default function EditorsNote() {
     );
     io.observe(section);
     return () => io.disconnect();
-  }, [staged]);
+  }, [staged, driven]);
+
+  // Measuring still has to happen when driven, but the scroll maths does not.
+  useEffect(() => {
+    if (!driven) return;
+    let raf = 0;
+    const request = () => {
+      if (!raf) raf = requestAnimationFrame(() => {
+        raf = 0;
+        measure();
+      });
+    };
+    request();
+    window.addEventListener("resize", request);
+    const ro = new ResizeObserver(request);
+    if (scriptRef.current) ro.observe(scriptRef.current);
+    document.fonts?.ready?.then(request);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", request);
+      ro.disconnect();
+    };
+  }, [driven, measure]);
 
   useEffect(() => {
-    if (!staged) return;
+    if (!staged || driven) return;
     const section = sectionRef.current;
     if (!section) return;
 
@@ -106,6 +143,11 @@ export default function EditorsNote() {
 
     // all reads and state writes happen inside the frame callback, never
     // synchronously in the effect body
+    const progressOf = (rect: DOMRect) => {
+      const runway = rect.height - window.innerHeight;
+      return runway > 0 ? clamp01(-rect.top / runway) : 1;
+    };
+
     const read = () => {
       raf = 0;
       if (remeasure) {
@@ -113,15 +155,21 @@ export default function EditorsNote() {
         measure();
       }
       const r = section.getBoundingClientRect();
-      const runway = r.height - window.innerHeight;
-      setProgress(runway > 0 ? clamp01(-r.top / runway) : 1);
-      // Keyed to the title itself, not the section: 0 when its top is at the
-      // bottom of the viewport, 1 once it has risen three quarters of the way
-      // up. Keying it to the section filled the letters while they were still
-      // below the fold.
+      setOwnProgress(progressOf(r));
+      // Keyed to the title itself, not the section, and held back until it is
+      // properly on screen: nothing moves while its top is below FLY_START of
+      // the viewport, and the sequence finishes FLY_SPAN later. Starting it at
+      // the viewport edge meant the first lines had already settled by the
+      // time they were readable.
       const title = scriptRef.current?.getBoundingClientRect();
       const top = title ? title.top : r.top;
-      setApproach(clamp01((window.innerHeight - top) / (window.innerHeight * 0.75)));
+      const h = window.innerHeight;
+      const rising = clamp01((h * FLY_START - top) / (h * FLY_SPAN));
+      // Once the section pins, the title stops rising and `rising` freezes
+      // wherever it got to — so the first slice of the runway finishes the
+      // sequence, well before the travel starts at 0.08.
+      const pinned = clamp01(progressOf(r) / 0.06);
+      setOwnApproach(Math.max(rising, pinned));
     };
     const request = (withMeasure = false) => {
       if (withMeasure) remeasure = true;
@@ -147,7 +195,7 @@ export default function EditorsNote() {
       window.removeEventListener("resize", onResize);
       ro.disconnect();
     };
-  }, [staged, measure]);
+  }, [staged, driven, measure]);
 
   // 0 → statement centred and large; 1 → statement resting in column one
   const travel = staged ? ease(clamp01((progress - 0.08) / 0.42)) : 1;
@@ -186,15 +234,21 @@ export default function EditorsNote() {
       ref={sectionRef}
       id="note"
       className={`paper relative isolate scroll-mt-20 text-[color:var(--ink-brown)] ${
-        staged ? "h-[280vh]" : "flex min-h-[100lvh] items-center px-5 pt-28 pb-20 sm:px-10"
+        driven
+          ? "flex h-full items-center px-5 sm:px-10"
+          : staged
+            ? "h-[280vh]"
+            : "flex min-h-[100lvh] items-center px-5 pt-28 pb-20 sm:px-10"
       }`}
     >
       <div
         ref={stageRef}
         className={
-          staged
-            ? "sticky top-0 flex h-[100lvh] items-center overflow-hidden px-5 sm:px-10"
-            : "fly-timed w-full"
+          driven
+            ? "w-full"
+            : staged
+              ? "sticky top-0 flex h-[100lvh] items-center overflow-hidden px-5 sm:px-10"
+              : "fly-timed w-full"
         }
       >
         <div className="mx-auto grid w-full max-w-[1400px] items-center gap-10 md:grid-cols-[auto_auto_auto] md:justify-center md:gap-12 lg:gap-16">
@@ -232,7 +286,7 @@ export default function EditorsNote() {
                               transform: `translate3d(0, ${(1 - t) * 0.5}em, 0) rotate(${
                                 (1 - t) * -7
                               }deg)`,
-                              transitionDelay: staged ? undefined : `${index * 0.028}s`,
+                              transitionDelay: staged ? undefined : `${0.35 + index * 0.028}s`,
                             }}
                           >
                             {char}

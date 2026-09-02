@@ -183,6 +183,74 @@ both back. It stays a plain `<img>`: the file carries its own CSS keyframes,
 and the image optimiser would strip or rasterise them. It is the one element
 that never fades in.
 
+### Paper tear
+
+[RipStage.tsx](src/components/RipStage.tsx) pins the editor's note over the
+category rail and tears the sheet away from the right as you scroll, so the
+rail is uncovered rather than scrolled to. The note plays out first — title,
+travel, prose — then the rip runs from about 56% to 90% of the runway, with a
+hold at either end.
+
+The stage owns the scroll maths and hands the note a `drive` prop; the note
+renders as a plain full-height panel in that mode instead of carrying its own
+runway. The paper is clipped with a `clip-path` polygon whose edge is a seeded
+vertical tear, and it starts past the right edge and ends past the left, so the
+jitter never nicks the sheet before the rip begins or leaves a sliver at the
+end. A drop-shadow on the clipped layer casts the torn edge onto what it is
+uncovering.
+
+Below `md` and under reduced motion there is no pinning: the note runs at its
+natural height, [PaperTear.tsx](src/components/PaperTear.tsx) does a horizontal
+version of the same tear, and the rail follows. A phone cannot hold the note's
+stacked layout in one viewport, so pinning it would crop the copy.
+
+`PaperTear` is the sheet ending in a torn edge and lifting away faster than the
+page scrolls, leaving a few shreds hanging in the gap.
+
+The edge is generated, not drawn — a seeded `mulberry32` walk, so server and
+client produce the same path and hydration stays clean. Its shape is the whole
+trick: torn paper is a near-horizontal line that is never quite horizontal,
+with constant small jitter and the occasional deeper nick. A regular zig-zag,
+or teeth of any real height, reads as mountains instead. A second path a few
+units below, in a darker mix of the paper colour, gives the sheet thickness.
+
+### Explore by perspective
+
+[PerspectiveRail.tsx](src/components/PerspectiveRail.tsx) is a snap-scrolling
+rail of six category cards on a graphite ground — four across at `lg`, the rest
+reached by scrolling. While the stage is pinned, page scroll walks the rail
+along: the last fifth of the runway maps to the rail's `scrollLeft`, so
+scrolling down carries the carousel to the right. Setting `scrollLeft` rather
+than transforming keeps it a real scroll container, so a swipe still works and
+nothing has to be undone when the stage lets go; snap is off while driven, or
+it would fight the scroll position. Off the stage — mobile, reduced motion —
+it is an ordinary snap-scrolling rail with the arrow buttons nudging it by one
+card width. Cards and controls are cut with `.pixel-corner`: stepped corners
+via `clip-path`, so they read as low-res sprites.
+
+`.pixel-corner-sm` exists because the step size has to shrink with the box: at
+the card's 5px step a 36px button loses most of its edges, and with a border
+on it the leftovers read as stray bars.
+
+Card art comes from [scripts/generate-card-art.js](scripts/generate-card-art.js),
+which writes six sprite strips into `public/assets/categories` with a
+hand-rolled PNG encoder and a seeded PRNG — re-running gives the same art. Each
+file is six 132x176 frames laid out horizontally, and `.card-sprite` steps
+`background-position` through them, so the scenes animate with no canvas, no
+video and no library: clouds drift, shafts shimmer, the spiral turns, the crowd
+bobs.
+
+Two details that matter there. The PRNG is re-seeded identically per frame, so
+static parts of a scene hold still and only phase-driven parts move — otherwise
+the grain boils. And the step timing is `steps(6, jump-none)`: the default
+`step-end` would skip the first frame and stop short of the last, since six
+frames need six stops across the range, not six jumps.
+
+The frames are tiny on purpose: the cards draw them with `image-rendering:
+pixelated`, so the upscale is what produces the blocks. Swap in photographs by
+dropping files at the same paths — as a strip if you want them animated, or a
+single frame with `.card-sprite` swapped for a plain cover background.
+
 **[GlitchNav.tsx](src/components/GlitchNav.tsx)** — fixed nav. Each label is a
 `.glitch` element that renders two chromatic ghosts via `::before` / `::after`,
 twitching rarely on a staggered delay and hard on hover/focus.

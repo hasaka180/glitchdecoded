@@ -1,6 +1,6 @@
 import GlitchNav from "@/components/GlitchNav";
-import EditorsNote from "@/components/EditorsNote";
 import Hero from "@/components/Hero";
+import RipStage from "@/components/RipStage";
 
 export default function Home() {
   return (
@@ -9,7 +9,7 @@ export default function Home() {
       <main className="flex-1">
         <Hero />
 
-        <EditorsNote />
+        <RipStage />
       </main>
     </>
   );

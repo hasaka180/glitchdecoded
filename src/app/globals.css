@@ -9,6 +9,7 @@
   --cyan: #4de2ff;
   --yellow: #efe87b;
   --paper: #fbfaf8;
+  --graphite: #d2d2d2;
   --script-red: #c8392a;
   --ink-brown: #2b2118;
   --blue: #1b2ac9;
@@ -27,6 +28,7 @@
   --color-cyan: var(--cyan);
   --color-yellow: var(--yellow);
   --color-paper: var(--paper);
+  --color-graphite: var(--graphite);
   --color-script-red: var(--script-red);
   --color-ink-brown: var(--ink-brown);
   --color-blue: var(--blue);
@@ -242,4 +244,93 @@ body {
 </svg>");
   background-size: 240px 240px;
   background-repeat: repeat;
+}
+
+/* ---------------------------------------------------------------------------
+   Pixel shapes
+   Stepped corners cut with clip-path, so cards and buttons read as low-res
+   sprites rather than rounded rectangles.
+--------------------------------------------------------------------------- */
+
+.pixel-corner {
+  --step: 5px;
+  --edge: calc(var(--step) * 2);
+  clip-path: polygon(
+    0 var(--edge),
+    var(--step) var(--edge),
+    var(--step) var(--step),
+    var(--edge) var(--step),
+    var(--edge) 0,
+    calc(100% - var(--edge)) 0,
+    calc(100% - var(--edge)) var(--step),
+    calc(100% - var(--step)) var(--step),
+    calc(100% - var(--step)) var(--edge),
+    100% var(--edge),
+    100% calc(100% - var(--edge)),
+    calc(100% - var(--step)) calc(100% - var(--edge)),
+    calc(100% - var(--step)) calc(100% - var(--step)),
+    calc(100% - var(--edge)) calc(100% - var(--step)),
+    calc(100% - var(--edge)) 100%,
+    var(--edge) 100%,
+    var(--edge) calc(100% - var(--step)),
+    var(--step) calc(100% - var(--step)),
+    var(--step) calc(100% - var(--edge)),
+    0 calc(100% - var(--edge))
+  );
+}
+
+/* Small controls need a finer step, or the corners eat the whole box. */
+.pixel-corner-sm {
+  --step: 3px;
+}
+
+.pixel-corner-sm {
+  clip-path: polygon(
+    0 6px, 3px 6px, 3px 3px, 6px 3px, 6px 0,
+    calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px,
+    calc(100% - 3px) 6px, 100% 6px,
+    100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px),
+    calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px),
+    calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px),
+    3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px)
+  );
+}
+
+/* The rail scrolls; the scrollbar would cut across the pixel edge. */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Sprite strips
+   Card art is a horizontal 6-frame strip. Stepping background-position with
+   jump-none lands exactly on each frame — the default step-end would skip the
+   first frame and stop short of the last.
+--------------------------------------------------------------------------- */
+
+.card-sprite {
+  background-repeat: no-repeat;
+  background-size: 600% 100%;
+  background-position-x: 0%;
+  image-rendering: pixelated;
+  animation: sprite-run 1.7s steps(6, jump-none) infinite;
+}
+
+@keyframes sprite-run {
+  from {
+    background-position-x: 0%;
+  }
+  to {
+    background-position-x: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-sprite {
+    animation: none;
+  }
 }
