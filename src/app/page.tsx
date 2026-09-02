@@ -1,6 +1,7 @@
 import GlitchNav from "@/components/GlitchNav";
 import Hero from "@/components/Hero";
 import RipStage from "@/components/RipStage";
+import TopicField from "@/components/TopicField";
 
 export default function Home() {
   return (
@@ -10,6 +11,8 @@ export default function Home() {
         <Hero />
 
         <RipStage />
+
+        <TopicField />
       </main>
     </>
   );

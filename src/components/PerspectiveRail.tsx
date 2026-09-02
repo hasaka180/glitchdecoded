@@ -112,14 +112,14 @@ export default function PerspectiveRail({ inStage, scrollProgress }: Props = {})
     >
       <div className="mx-auto w-full max-w-[1500px] px-5 sm:px-10">
         <div className="mb-6 flex items-end justify-between gap-6">
-          <h2 className="font-arial text-[10px] font-bold tracking-[0.3em] uppercase opacity-80 sm:text-[11px]">
+          <h2 className="font-arial text-[10px] font-bold tracking-[0.3em] text-black uppercase opacity-80 sm:text-[11px]">
             Explore by perspective
           </h2>
 
           <div className="flex items-center gap-4">
             <a
               href="#categories"
-              className="hidden font-garamond text-[15px] tracking-wide opacity-80 transition-opacity hover:opacity-100 sm:inline-flex sm:items-center sm:gap-2"
+              className="hidden font-garamond text-[15px] tracking-wide text-black opacity-80 transition-opacity hover:opacity-100 sm:inline-flex sm:items-center sm:gap-2"
             >
               View all categories <span aria-hidden>→</span>
             </a>
@@ -130,7 +130,7 @@ export default function PerspectiveRail({ inStage, scrollProgress }: Props = {})
                   type="button"
                   onClick={() => nudge(direction)}
                   aria-label={direction === -1 ? "Previous categories" : "Next categories"}
-                  className="pixel-corner-sm flex size-9 items-center justify-center bg-white/10 text-sm transition-colors hover:bg-white/25"
+                  className="pixel-corner-sm flex size-9 items-center justify-center bg-black/10 text-sm text-black transition-colors hover:bg-black/20"
                 >
                   <span aria-hidden>{direction === -1 ? "←" : "→"}</span>
                 </button>
@@ -197,7 +197,7 @@ export default function PerspectiveRail({ inStage, scrollProgress }: Props = {})
 
         <a
           href="#categories"
-          className="mt-8 inline-flex items-center gap-2 font-garamond text-[15px] opacity-80 sm:hidden"
+          className="mt-8 inline-flex items-center gap-2 font-garamond text-[15px] text-black opacity-80 sm:hidden"
         >
           View all categories <span aria-hidden>→</span>
         </a>

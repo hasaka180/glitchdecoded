@@ -334,3 +334,51 @@ body {
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Topic field
+   Sprites hover on their own, each on a slightly different clock so the field
+   never pulses in unison. The description unrolls like a scroll from its top
+   edge, which is why the transform-origin matters.
+--------------------------------------------------------------------------- */
+
+.topic-drift {
+  animation: topic-drift 6s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes topic-drift {
+  from {
+    transform: translateY(-5px);
+  }
+  to {
+    transform: translateY(5px);
+  }
+}
+
+.topic-scroll {
+  transform-origin: top center;
+  animation: topic-unfurl 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+}
+
+@keyframes topic-unfurl {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0.06);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topic-drift {
+    animation: none;
+  }
+  .topic-scroll {
+    animation: none;
+    transform: translateX(-50%);
+  }
+}
