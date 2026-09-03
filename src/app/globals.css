@@ -382,3 +382,196 @@ body {
     transform: translateX(-50%);
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Screening room
+   A CRT is three things stacked over the picture: a scanline grid, a slow
+   roll bar, and untuned static. The static is generated noise scrubbed with
+   steps() so it snaps between frames the way a real tube does, rather than
+   sliding. All three are pure overlay — nothing here affects layout.
+--------------------------------------------------------------------------- */
+
+.crt-static {
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'>\
+<filter id='s' x='0' y='0' width='100%25' height='100%25'>\
+<feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/>\
+<feColorMatrix type='saturate' values='0'/>\
+</filter>\
+<rect width='200' height='200' filter='url(%23s)'/>\
+</svg>");
+  background-size: 200px 200px;
+  animation: crt-static 0.32s steps(4, jump-none) infinite;
+}
+
+@keyframes crt-static {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 200px 200px;
+  }
+}
+
+/* The tube never quite settles — a shallow brightness wobble, off a prime-ish
+   duration so it never syncs with the roll bar below. */
+.crt-flicker {
+  animation: crt-flicker 3.7s ease-in-out infinite;
+}
+
+@keyframes crt-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  38% {
+    opacity: 0.94;
+  }
+  41% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 0.9;
+  }
+  74% {
+    opacity: 1;
+  }
+}
+
+.crt-roll {
+  animation: crt-roll 9s linear infinite;
+}
+
+@keyframes crt-roll {
+  from {
+    transform: translateY(-30%);
+  }
+  to {
+    transform: translateY(130%);
+  }
+}
+
+/* Film perforations down the cabinet edges. Drawn as a repeating gradient so
+   the count follows the height instead of being fixed. */
+.sprockets {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 7px,
+    rgba(244, 244, 245, 0.22) 7px,
+    rgba(244, 244, 245, 0.22) 17px,
+    transparent 17px,
+    transparent 24px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crt-static,
+  .crt-flicker,
+  .crt-roll {
+    animation: none;
+  }
+  .crt-roll {
+    opacity: 0;
+  }
+}
+
+/* Feint ruling over the paper stock — laid on top of `.paper`, so the grain
+   shows through the lines rather than the lines sitting on a flat fill. */
+.ruled {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 33px,
+      rgba(43, 33, 24, 0.13) 33px,
+      rgba(43, 33, 24, 0.13) 34px
+    ),
+    url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'>\
+<filter id='r' x='0' y='0' width='100%25' height='100%25'>\
+<feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/>\
+<feColorMatrix type='saturate' values='0'/>\
+</filter>\
+<rect width='240' height='240' filter='url(%23r)' opacity='0.5'/>\
+</svg>");
+  background-size:
+    100% 34px,
+    240px 240px;
+}
+
+/* The board settles in on its own where no stage is scrubbing it. */
+.note-timed {
+  transition:
+    transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 0.55s ease-out;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note-timed {
+    transition: none;
+  }
+}
+
+/* The note rail. Four cards on a desktop, two on a tablet, one on a phone —
+   the moving track always carries two laps of the ring, so a slot is a twelfth
+   of it at every width and one step is always the same distance. Under reduced
+   motion the track does not move and the rail is scrolled by hand, so the same
+   slot has to be measured against the viewport instead. */
+.note-rail {
+  --slots: 1;
+}
+
+@media (min-width: 640px) {
+  .note-rail {
+    --slots: 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .note-rail {
+    --slots: 4;
+  }
+}
+
+.note-rail-track {
+  width: calc(1200% / var(--slots));
+  will-change: transform;
+}
+
+/* The note's lift off the wall. On the slot rather than the card because the
+   card is cut with clip-path, and clip-path takes a box-shadow with it —
+   drop-shadow on the parent follows the stepped edge instead. */
+.note-card {
+  filter: drop-shadow(0 12px 18px rgba(43, 33, 24, 0.22));
+}
+
+.note-rail-track > li {
+  width: calc(100% / 12);
+}
+
+.note-rail-static {
+  width: 100%;
+}
+
+.note-rail-static > li {
+  width: calc(100% / var(--slots));
+  scroll-snap-align: start;
+}
+
+/* The paper stock's grain without its colour, for a ground that brings its
+   own — the film archive is printed on the same tooth as the editor's note,
+   because it is a page that gets torn off. */
+.stock {
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'>\
+<filter id='k' x='0' y='0' width='100%25' height='100%25'>\
+<feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/>\
+<feColorMatrix type='saturate' values='0'/>\
+</filter>\
+<rect width='240' height='240' filter='url(%23k)' opacity='0.42'/>\
+</svg>");
+  background-size: 240px 240px;
+  background-repeat: repeat;
+}

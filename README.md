@@ -251,6 +251,106 @@ pixelated`, so the upscale is what produces the blocks. Swap in photographs by
 dropping files at the same paths — as a strip if you want them animated, or a
 single frame with `.card-sprite` swapped for a plain cover background.
 
+### Recommended for you
+
+[RecommendedGrid.tsx](src/components/RecommendedGrid.tsx) closes the page after
+the topic field, on the same graphite ground. The cards are black with a still
+image and a fade over it — no coloured ground behind the copy; the pick's hue
+only reaches its category label and its top rule. It is a server component;
+nothing here needs state, and the hover work is CSS.
+
+The grid is four columns at `lg`. The featured card takes `col-span-2
+row-span-2`, which leaves exactly a 2x2 for the other four, so the block squares
+off with no holes; at `sm` the featured card spans both columns and the rest
+pair up; below that everything stacks. The featured card's image runs the whole
+card with the copy sitting on the black end of the fade; the smaller cards give
+theirs a fixed `aspect-[3/2]` band and put the copy on black underneath, so the
+art is not reduced to a strip behind the text.
+
+Images are one still per article in `public/assets/recommended`, named for the
+slug, drawn with `background-size: cover` — so any aspect ratio works and
+swapping in photographs is a matter of replacing the files. The current stills
+are single frames cut out of the category sprite strips with `sips`, which is
+why `CardImage` sets `image-rendering: pixelated`: they are 132x176 and upscale
+about four times. Drop that line along with the pixel art.
+
+Nothing here animates. The rail's `.card-sprite` stepping is deliberately not
+reused — `cover` on a still needs none of the `600% auto` frame arithmetic that
+class requires, and by this point in the page five looping scenes would be
+noise.
+
+Each card is a `.pixel-corner` — the stepped corners finally read as steps here,
+with the light ground showing through the notches — and carries a top rule held
+at `scale-x-[0.28]` in the pick's hue that runs the rest of the edge as the card
+is picked up. No borders: `clip-path` cuts them into stray bars at the corners.
+
+Two details of fit. The read time sits on the top row beside the category rather
+than with the reason line — at a quarter of a 1200px grid a card is ~270px wide,
+and "Because you read Friendship - 5 min" wraps there. And since the ground no
+longer changes at the section break, the nav's broken signal bar marks it
+instead, in ink rather than cyan.
+
+### Note to self
+
+[NoteRip.tsx](src/components/NoteRip.tsx) is the mirror of the rip that opened
+the category rail. It pins the film archive over the note board and tears it
+away to the right, so the archive is not a section you leave — it is the page
+that gets scrapped to uncover the board underneath. Where the first rip holds
+the sheet on the left and uncovers from the right, this one holds it on the
+right and uncovers from the left: the `clip-path` polygon anchors on `100%`
+instead of `0%`, the edge runs from past the left edge to past the right, the
+drop-shadow casts the other way, and the shreds hang off the right of the edge
+and drift left. A different `mulberry32` seed, so the page does not tear along
+the same fibres twice.
+
+[ScreeningRoom.tsx](src/components/ScreeningRoom.tsx) takes an `inStage` prop
+for that role: it drops its section break, tightens the header rhythm, and caps
+the tube at `46lvh` so the whole archive holds one viewport while pinned. It
+also carries `.stock` — the editor's-note grain without its colour, so a ground
+that brings its own can still be printed on paper. A flat panel does not read
+as something you could tear.
+
+Below `md` and under reduced motion there is no pinning: the archive runs at its
+natural height, `PaperTear` does the horizontal version, and the board follows.
+That tear runs the other way round from the first one, so `PaperTear` takes a
+`sheet` colour alongside `ground` — graphite lifting off the board's paper
+rather than paper lifting off graphite.
+
+[NoteWall.tsx](src/components/NoteWall.tsx) is the board: six notes people wrote
+to themselves on a rail that shows four at a time and turns on its own, on the
+same stock as the editor's note, because this is the other end of the same
+conversation.
+
+The rail is four slots at `lg`, two at `sm`, one below. The moving track always
+carries two laps of the ring, so a slot is a twelfth of it at any width and one
+step is the same sum everywhere; stepping past the sixth card lands on an
+identical card, and the position is reset with the transition switched off two
+frames later, so nothing appears to move. Gutters are the cards’ own padding
+rather than a flex gap — that arithmetic stops holding otherwise. Autoplay holds
+while the reader is on the rail or writing, and under reduced motion the track
+does not move at all: the same six cards become a snap-scrolling row, which is
+why the slot has to be measured against the viewport in that mode instead.
+
+Each note is written over a full-bleed band of the category art, off the same
+six-frame strips the rail animates, with the category ground burning through it
+and a fade darkening the bottom so the hand reads over whatever the art is
+doing there. Art, accent and ground are fixed per slot rather than random: the
+board has to render identically on the server and the client, and a note keeps
+its face when another one is pinned ahead of it. The lift is a `drop-shadow` on
+the slot, not a `box-shadow` on the card — `.pixel-corner` clips with
+`clip-path`, and `clip-path` takes a box-shadow with it.
+
+A note the reader pins is kept in their own browser and the copy says so. It is
+read through `useSyncExternalStore` rather than state seeded in an effect: the
+server has no store, so a lazy initialiser would make the first client render
+disagree with the server HTML. The snapshot is cached against the raw string so
+it stays referentially stable — re-parsing on every call would loop React
+forever — and a failed write keeps the cache agreeing with what the store
+actually holds, or the next read would throw the note away again. The composer
+is fixed to the viewport rather than laid into the board: while the board is
+pinned to the scroll position, a form that moved as it was typed into would be
+unusable.
+
 **[GlitchNav.tsx](src/components/GlitchNav.tsx)** — fixed nav. Each label is a
 `.glitch` element that renders two chromatic ghosts via `::before` / `::after`,
 twitching rarely on a staggered delay and hard on hover/focus.

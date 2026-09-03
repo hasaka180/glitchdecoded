@@ -39,7 +39,16 @@ function tearEdge(seed: number, base: number) {
 const EDGE = tearEdge(7, BASE);
 const FIBRE = tearEdge(31, BASE + 3);
 
-export default function PaperTear() {
+/**
+ * `sheet` is the page coming away, `ground` the section showing through the
+ * tear behind it. They default to the editor's-note stock lifting off the
+ * category rail; the archive tears the other way round, its graphite page
+ * lifting off the note board's paper.
+ */
+export default function PaperTear({
+  sheet = "var(--paper)",
+  ground = "var(--graphite)",
+}: { sheet?: string; ground?: string } = {}) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [progress, setProgress] = useState(0);
 
@@ -76,7 +85,8 @@ export default function PaperTear() {
     <div
       ref={ref}
       aria-hidden
-      className="relative h-[22vh] overflow-hidden bg-[color:var(--graphite)] sm:h-[30vh]"
+      className="relative h-[22vh] overflow-hidden sm:h-[30vh]"
+      style={{ backgroundColor: ground }}
     >
       <div
         className="absolute inset-x-0 top-0 will-change-transform"
@@ -90,9 +100,9 @@ export default function PaperTear() {
           {/* the shadowed underside of the sheet, just proud of the edge */}
           <path
             d={`M0 0 L0 ${BASE + 3} ${FIBRE} L${W} 0 Z`}
-            fill="color-mix(in srgb, var(--paper) 82%, #000)"
+            fill={`color-mix(in srgb, ${sheet} 82%, #000)`}
           />
-          <path d={`M0 0 L0 ${BASE} ${EDGE} L${W} 0 Z`} fill="var(--paper)" />
+          <path d={`M0 0 L0 ${BASE} ${EDGE} L${W} 0 Z`} fill={sheet} />
         </svg>
       </div>
 
@@ -108,17 +118,17 @@ export default function PaperTear() {
         >
           <path
             d={`M214 ${BASE + 1} l17 5 l-6 13 l-18 -7 Z`}
-            fill="var(--paper)"
+            fill={sheet}
             opacity="0.75"
           />
           <path
             d={`M792 ${BASE + 4} l21 4 l-8 15 l-19 -6 Z`}
-            fill="var(--paper)"
+            fill={sheet}
             opacity="0.6"
           />
           <path
             d={`M1206 ${BASE - 2} l13 8 l-9 11 l-12 -9 Z`}
-            fill="var(--paper)"
+            fill={sheet}
             opacity="0.5"
           />
         </svg>
