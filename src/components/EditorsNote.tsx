@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { useNarrow } from "@/lib/useNarrow";
@@ -347,15 +348,15 @@ export default function EditorsNote({ drive }: Props = {}) {
             </div>
 
             <div style={appear(0.78, 2.25)} className="fly-block">
-              <a
-                href="#manifesto"
+              <Link
+                href="/about#manifesto"
                 className="group inline-flex items-center gap-3 border-b border-current pb-1 font-arial text-[10px] font-bold tracking-[0.2em] uppercase"
               >
                 Read our manifesto
                 <span className="transition-transform group-hover:translate-x-1">
                   →
                 </span>
-              </a>
+              </Link>
             </div>
           </div>
         </div>

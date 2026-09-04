@@ -1,73 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef } from "react";
 
-type Category = {
-  name: string;
-  blurb: string;
-  /** Accent used for the label and the card's light. */
-  hue: string;
-  /** Two stops for the card's ground. */
-  from: string;
-  to: string;
-  /**
-   * Optional art, drawn under the gradient with `image-rendering: pixelated`.
-   * Supply a deliberately small file (~240px wide) — it is stretched to the
-   * card, so the upscale is what produces the blocks.
-   */
-  image?: string;
-};
-
-const CATEGORIES: Category[] = [
-  {
-    name: "Unpopular",
-    image: "/assets/categories/unpopular.png",
-    blurb: "Ideas worth considering, even when they're uncomfortable.",
-    hue: "#e8d24a",
-    from: "#3a3324",
-    to: "#0b0a08",
-  },
-  {
-    name: "Untold",
-    image: "/assets/categories/untold.png",
-    blurb: "Stories and truths that don't get enough attention.",
-    hue: "#4fd0e0",
-    from: "#13323f",
-    to: "#050f16",
-  },
-  {
-    name: "Reality check",
-    image: "/assets/categories/reality-check.png",
-    blurb: "Things we've accepted without ever asking why.",
-    hue: "#e08a3c",
-    from: "#43301c",
-    to: "#120c06",
-  },
-  {
-    name: "Deep dives",
-    image: "/assets/categories/deep-dives.png",
-    blurb: "Long-form explorations into life, society, mind and existence.",
-    hue: "#a98cf0",
-    from: "#241f3d",
-    to: "#0a0813",
-  },
-  {
-    name: "Nature",
-    image: "/assets/categories/nature.png",
-    blurb: "Lessons, harmony and perspective from the natural world.",
-    hue: "#8fce5a",
-    from: "#22341d",
-    to: "#080d06",
-  },
-  {
-    name: "Human",
-    image: "/assets/categories/human.png",
-    blurb: "The beautiful, messy business of being human.",
-    hue: "#6fa8ef",
-    from: "#1d2a3d",
-    to: "#070b11",
-  },
-];
+import { CATEGORIES } from "@/lib/categories";
 
 type Props = {
   /** Rendered inside a pinned stage: fill the viewport instead of flowing. */
@@ -117,12 +53,12 @@ export default function PerspectiveRail({ inStage, scrollProgress }: Props = {})
           </h2>
 
           <div className="flex items-center gap-4">
-            <a
-              href="#categories"
+            <Link
+              href="/categories"
               className="hidden font-garamond text-[15px] tracking-wide text-black opacity-80 transition-opacity hover:opacity-100 sm:inline-flex sm:items-center sm:gap-2"
             >
               View all categories <span aria-hidden>→</span>
-            </a>
+            </Link>
             <div className="flex gap-2">
               {([-1, 1] as const).map((direction) => (
                 <button
@@ -147,13 +83,13 @@ export default function PerspectiveRail({ inStage, scrollProgress }: Props = {})
         >
           {CATEGORIES.map((category) => (
             <li
-              key={category.name}
+              key={category.slug}
               className={`w-[78vw] shrink-0 sm:w-[52vw] md:w-[38vw] lg:w-[calc((100%-3rem)/4)] ${
                 driven ? "" : "snap-start"
               }`}
             >
-              <a
-                href={`#${category.name.toLowerCase().replace(/\s+/g, "-")}`}
+              <Link
+                href={`/categories/${category.slug}`}
                 className="pixel-corner group relative flex aspect-[3/4] flex-col justify-between overflow-hidden p-5 transition-transform duration-300 hover:-translate-y-1"
                 style={{
                   backgroundImage: `linear-gradient(160deg, ${category.from}, ${category.to})`,
@@ -190,17 +126,17 @@ export default function PerspectiveRail({ inStage, scrollProgress }: Props = {})
                     <span aria-hidden>→</span>
                   </span>
                 </div>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
 
-        <a
-          href="#categories"
+        <Link
+          href="/categories"
           className="mt-8 inline-flex items-center gap-2 font-garamond text-[15px] text-black opacity-80 sm:hidden"
         >
           View all categories <span aria-hidden>→</span>
-        </a>
+        </Link>
       </div>
     </section>
   );

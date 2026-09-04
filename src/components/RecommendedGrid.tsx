@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 /**
  * Picks surfaced from the topics above, on the same graphite ground as the
  * topic field. Cards are black with a still image and a fade — no coloured
@@ -257,12 +259,12 @@ export default function RecommendedGrid() {
         </ul>
 
         <div className="mt-14 text-center sm:mt-16">
-          <a
-            href="#archive"
+          <Link
+            href="/categories"
             className="inline-flex items-center gap-2 font-garamond text-[17px] tracking-wide opacity-75 transition-opacity hover:opacity-100"
           >
             Browse the full archive <span aria-hidden>→</span>
-          </a>
+          </Link>
         </div>
       </div>
     </section>

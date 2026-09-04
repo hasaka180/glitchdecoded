@@ -6,6 +6,9 @@ import {
   Playfair_Display,
 } from "next/font/google";
 import localFont from "next/font/local";
+
+import SiteChrome from "@/components/cms/SiteChrome";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -56,7 +59,7 @@ export const metadata: Metadata = {
     "Unpopular opinions and untold stories. Move your cursor and the picture fractures into glass where you look.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children, modal }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
@@ -101,7 +104,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             ].join(""),
           }}
         />
+        {/* The nav floats over every public route, so it belongs to the shell
+            rather than to any one page. It stands down on the dashboard and the
+            auth screens, which carry their own header. */}
+        <SiteChrome />
         {children}
+        {/* A piece opened from a listing renders here, over the page that
+            linked to it. Empty on a hard load — see app/@modal/default.tsx. */}
+        {modal}
       </body>
     </html>
   );

@@ -144,9 +144,27 @@ type Props = {
   inStage?: boolean;
   /** 0 → nothing pinned yet, 1 → the whole board is up. Stage-driven. */
   reveal?: number;
+  /**
+   * How the board is laid out. The home page turns a rail, because the board is
+   * one section of a scroll and a rail says "there is more of this". The notes
+   * page is the board itself, so it lays every note out at once — a reader who
+   * came to look at the board should not have to wait for it to come round.
+   */
+  layout?: "rail" | "grid";
+  /**
+   * The section's own heading. Off where a masthead already carries it, so the
+   * notes page does not print "note to self" twice.
+   */
+  heading?: boolean;
 };
 
-export default function NoteWall({ inStage = false, reveal = 1 }: Props) {
+export default function NoteWall({
+  inStage = false,
+  reveal = 1,
+  layout = "rail",
+  heading = true,
+}: Props) {
+  const grid = layout === "grid";
   const sectionRef = useRef<HTMLElement | null>(null);
   const fieldRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -188,7 +206,7 @@ export default function NoteWall({ inStage = false, reveal = 1 }: Props) {
 
   // Autoplay. Held while the reader is on the rail or writing, and off
   // entirely under reduced motion, where the rail scrolls by hand instead.
-  const paused = held || open || reduced;
+  const paused = held || open || reduced || grid;
   useEffect(() => {
     if (paused) return;
     const id = setInterval(() => setStep((n) => n + 1), DWELL);
@@ -246,7 +264,8 @@ export default function NoteWall({ inStage = false, reveal = 1 }: Props) {
     setOpen(false);
   }, [text, sign]);
 
-  const notes = [...mine, ...SEED].slice(0, RING);
+  // The rail is a fixed ring so its arithmetic holds; the grid shows the lot.
+  const notes = grid ? [...mine, ...SEED] : [...mine, ...SEED].slice(0, RING);
   /** A second lap of the same notes, so the rail can turn without a seam. */
   const track = [...notes, ...notes];
 
@@ -258,12 +277,14 @@ export default function NoteWall({ inStage = false, reveal = 1 }: Props) {
 
   const card = (note: Note, i: number, copy: number) => {
     const t = at(i);
-    const slot = SLOT[i];
+    const slot = SLOT[i % SLOT.length];
     return (
       <li
         key={`${note.id}-${copy}`}
         aria-hidden={copy > 0}
-        className={`note-card shrink-0 px-2.5 ${inStage ? "" : "note-timed"}`}
+        className={`note-card ${grid ? "" : "shrink-0 px-2.5"} ${
+          inStage ? "" : "note-timed"
+        }`}
         style={{
           opacity: t,
           transform: `translate3d(0, ${(1 - t) * 26}px, 0)`,
@@ -330,17 +351,27 @@ export default function NoteWall({ inStage = false, reveal = 1 }: Props) {
     >
       <div className="w-full">
         <div className="mx-auto mb-8 flex w-full max-w-[1200px] flex-wrap items-end justify-between gap-5 px-5 sm:mb-12 sm:px-10">
-          <div>
+          {heading ? (
+            <div>
+              <p className="font-arial text-[10px] font-bold tracking-[0.3em] uppercase opacity-50 sm:text-[11px]">
+                The board
+              </p>
+              <h2 className="mt-4 font-pixel text-[26px] leading-[1.15] tracking-[0.02em] text-[color:var(--script-red)] uppercase sm:text-[42px]">
+                Note to self
+              </h2>
+            </div>
+          ) : (
             <p className="font-arial text-[10px] font-bold tracking-[0.3em] uppercase opacity-50 sm:text-[11px]">
-              The board
+              {notes.length} pinned
             </p>
-            <h2 className="mt-4 font-pixel text-[26px] leading-[1.15] tracking-[0.02em] text-[color:var(--script-red)] uppercase sm:text-[42px]">
-              Note to self
-            </h2>
-          </div>
+          )}
 
           <div className="flex items-end gap-8">
-            <p className="hidden max-w-[32ch] font-garamond text-[15px] leading-[1.55] opacity-70 sm:block sm:text-[17px]">
+            <p
+              className={`max-w-[32ch] font-garamond text-[15px] leading-[1.55] opacity-70 sm:text-[17px] ${
+                heading ? "hidden sm:block" : "hidden"
+              }`}
+            >
               Notes readers left themselves on the way out. Pin one of your own —
               it stays in this browser, on this device, and goes nowhere else.
             </p>
@@ -354,43 +385,55 @@ export default function NoteWall({ inStage = false, reveal = 1 }: Props) {
           </div>
         </div>
 
-        {/* The rail. Four slots wide on a desktop, two on a tablet, one on a
-            phone — the track always carries twelve cards, so a slot is a
-            twelfth of it whatever the count, and the step is the same sum at
-            every width. Gutters are the cards' own padding rather than a flex
-            gap, or that arithmetic stops holding. */}
-        <div
-          className="note-rail relative mx-auto -my-3 w-full max-w-[1200px] overflow-hidden px-2.5 py-3 sm:px-7"
-          onMouseEnter={() => setHeld(true)}
-          onMouseLeave={() => setHeld(false)}
-          onFocusCapture={() => setHeld(true)}
-          onBlurCapture={() => setHeld(false)}
-        >
-          <ul
-            className={`flex items-stretch ${
-              reduced
-                ? "note-rail-static scrollbar-none snap-x snap-mandatory overflow-x-auto"
-                : "note-rail-track"
-            }`}
-            style={
-              reduced
-                ? undefined
-                : {
-                    transform: `translate3d(calc(${-step} * 100% / 12), 0, 0)`,
-                    transition: snapping ? "none" : `transform ${SLIDE}ms cubic-bezier(0.4, 0, 0.2, 1)`,
-                  }
-            }
-          >
-            {reduced
-              ? notes.map((note, i) => card(note, i, 0))
-              : track.map((note, i) => card(note, i % RING, Math.floor(i / RING)))}
+        {grid ? (
+          /* Every note at once. The same card the rail turns — only the box
+             around it changes, so the two layouts cannot drift apart. */
+          <ul className="mx-auto grid w-full max-w-[1200px] gap-5 px-5 sm:grid-cols-2 sm:px-10 lg:grid-cols-3">
+            {notes.map((note, i) => card(note, i, 0))}
           </ul>
-        </div>
+        ) : (
+          /* The rail. Four slots wide on a desktop, two on a tablet, one on a
+             phone — the track always carries twelve cards, so a slot is a
+             twelfth of it whatever the count, and the step is the same sum at
+             every width. Gutters are the cards' own padding rather than a flex
+             gap, or that arithmetic stops holding. */
+          <div
+            className="note-rail relative mx-auto -my-3 w-full max-w-[1200px] overflow-hidden px-2.5 py-3 sm:px-7"
+            onMouseEnter={() => setHeld(true)}
+            onMouseLeave={() => setHeld(false)}
+            onFocusCapture={() => setHeld(true)}
+            onBlurCapture={() => setHeld(false)}
+          >
+            <ul
+              className={`flex items-stretch ${
+                reduced
+                  ? "note-rail-static scrollbar-none snap-x snap-mandatory overflow-x-auto"
+                  : "note-rail-track"
+              }`}
+              style={
+                reduced
+                  ? undefined
+                  : {
+                      transform: `translate3d(calc(${-step} * 100% / 12), 0, 0)`,
+                      transition: snapping
+                        ? "none"
+                        : `transform ${SLIDE}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                    }
+              }
+            >
+              {reduced
+                ? notes.map((note, i) => card(note, i, 0))
+                : track.map((note, i) => card(note, i % RING, Math.floor(i / RING)))}
+            </ul>
+          </div>
+        )}
 
-        <p className="mx-auto mt-8 w-full max-w-[1200px] px-5 font-garamond text-[15px] leading-[1.55] opacity-70 sm:hidden sm:px-10">
-          Notes readers left themselves on the way out. Pin one of your own — it
-          stays in this browser, on this device, and goes nowhere else.
-        </p>
+        {heading && (
+          <p className="mx-auto mt-8 w-full max-w-[1200px] px-5 font-garamond text-[15px] leading-[1.55] opacity-70 sm:hidden sm:px-10">
+            Notes readers left themselves on the way out. Pin one of your own —
+            it stays in this browser, on this device, and goes nowhere else.
+          </p>
+        )}
       </div>
 
       {/* The composer is fixed to the viewport rather than laid into the board:

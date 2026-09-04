@@ -204,6 +204,19 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
+   Nav menu
+   The floating panel scales in from the trigger corner. Reduced motion keeps
+   the fade but drops the movement.
+--------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-panel {
+    transition-property: opacity;
+    transform: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
    Title fly-in
    Characters are individually transformed, so they settle in sequence rather
    than the line appearing at once. Desktop scrubs the sequence off scroll
@@ -333,6 +346,16 @@ body {
   .card-sprite {
     animation: none;
   }
+}
+
+/* The same strip, held on one frame. A running animation wins over an inline
+   style for the property it animates, so a card that wants to pick its own
+   frame cannot use `.card-sprite` and set `background-position-x` — it needs a
+   class that never starts the animation in the first place. */
+.card-still {
+  background-repeat: no-repeat;
+  background-size: 600% 100%;
+  image-rendering: pixelated;
 }
 
 /* ---------------------------------------------------------------------------
@@ -558,6 +581,141 @@ body {
 .note-rail-static > li {
   width: calc(100% / var(--slots));
   scroll-snap-align: start;
+}
+
+/* ---------------------------------------------------------------------------
+   Dead channel
+   The sign-off's ground is untuned static. Two generated noise tiles at
+   different grains, each jumped to an unrelated offset every frame with
+   steps(1) — sliding a tile in one direction reads as drifting texture, and
+   only the jump reads as static. Neither tile ships a file: the noise is
+   feTurbulence, tiled with stitchTiles so the seams do not show.
+
+   The field is masked thin through the middle, so the static is loudest at the
+   torn edge and the colour bars and never fights the copy between them.
+--------------------------------------------------------------------------- */
+
+.static-field {
+  --tile: 200px;
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'>\
+<filter id='t' x='0' y='0' width='100%25' height='100%25'>\
+<feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/>\
+<feColorMatrix type='saturate' values='0'/>\
+</filter>\
+<rect width='200' height='200' filter='url(%23t)'/>\
+</svg>");
+  background-size: var(--tile) var(--tile);
+  animation: static-jump 0.48s steps(1, end) infinite;
+  will-change: background-position;
+}
+
+/* The same tile at a third of the size — the fine grain sitting inside the
+   coarse one, on its own clock so the two never refresh together. */
+.static-field-fine {
+  --tile: 68px;
+  animation-duration: 0.36s;
+  animation-direction: reverse;
+}
+
+/* Offsets are deliberately unrelated to each other and to the tile, so no two
+   consecutive frames line up and the field never appears to travel. */
+@keyframes static-jump {
+  0% {
+    background-position: 0 0;
+  }
+  12.5% {
+    background-position: -73px 41px;
+  }
+  25% {
+    background-position: 118px -96px;
+  }
+  37.5% {
+    background-position: 37px 133px;
+  }
+  50% {
+    background-position: -151px -27px;
+  }
+  62.5% {
+    background-position: 89px 84px;
+  }
+  75% {
+    background-position: -18px -119px;
+  }
+  87.5% {
+    background-position: 164px 12px;
+  }
+}
+
+.static-mask {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    rgba(0, 0, 0, 0.3) 26%,
+    rgba(0, 0, 0, 0.3) 74%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    rgba(0, 0, 0, 0.3) 26%,
+    rgba(0, 0, 0, 0.3) 74%,
+    #000 100%
+  );
+}
+
+/* The unlocked frame drifting through the picture. Travel is in percent of the
+   band's own height, so the numbers are large — it has to clear a footer
+   several times its own height. */
+.static-roll {
+  animation: static-roll 7.5s linear infinite;
+  will-change: transform;
+}
+
+@keyframes static-roll {
+  from {
+    transform: translate3d(0, -140%, 0);
+  }
+  to {
+    transform: translate3d(0, 460%, 0);
+  }
+}
+
+/* Under reduced motion the channel is simply dead rather than hissing: the
+   grain stays as texture, nothing refreshes, and the roll bar is gone. */
+@media (prefers-reduced-motion: reduce) {
+  .static-field {
+    animation: none;
+  }
+  .static-roll {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* The sign-off's cursor — a block that blinks the way a dead channel does.
+   steps(1) so it snaps on and off rather than fading. */
+.blink {
+  animation: blink 1.1s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  56%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blink {
+    animation: none;
+  }
 }
 
 /* The paper stock's grain without its colour, for a ground that brings its

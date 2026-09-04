@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 /**
@@ -501,12 +502,12 @@ export default function TopicField() {
         </ul>
 
         <div className="mt-20 text-center sm:mt-24">
-          <a
-            href="#all-topics"
+          <Link
+            href="/categories"
             className="inline-flex items-center gap-2 font-garamond text-[17px] tracking-wide opacity-75 transition-opacity hover:opacity-100"
           >
             Explore all topics <span aria-hidden>→</span>
-          </a>
+          </Link>
         </div>
       </div>
     </section>

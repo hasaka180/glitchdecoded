@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 /**
@@ -367,12 +368,12 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
         </div>
 
         <div className={inStage ? "mt-6 text-center" : "mt-12 text-center sm:mt-16"}>
-          <a
-            href="#archive"
+          <Link
+            href="/video-library"
             className="inline-flex items-center gap-2 font-garamond text-[17px] tracking-wide opacity-75 transition-opacity hover:opacity-100"
           >
-            The whole reel library <span aria-hidden>→</span>
-          </a>
+            The whole video library <span aria-hidden>→</span>
+          </Link>
         </div>
       </div>
     </section>

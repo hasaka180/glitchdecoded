@@ -3,7 +3,10 @@ import PixelUnglitch from "./PixelUnglitch";
 
 export default function Hero() {
   return (
-    <section className="scanlines relative isolate min-h-[100lvh] overflow-hidden bg-[color:var(--ink)]">
+    <section
+      id="home"
+      className="scanlines relative isolate min-h-[100lvh] overflow-hidden bg-[color:var(--ink)]"
+    >
       {/* Base layer: the photo, fractured into glass panes under the pointer. */}
       <PixelUnglitch
         className="absolute inset-0 -z-10"
