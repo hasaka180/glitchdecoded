@@ -24,11 +24,17 @@ export const COMPANION_EFFORT = "medium" as const;
 export const COMPOSE_EFFORT = "medium" as const;
 
 /**
- * Output ceilings. The chat one is deliberately tight: the brief already asks
- * for short turns, and a ceiling is the only thing that actually enforces it.
+ * Output ceilings.
+ *
+ * These cover the model's reasoning as well as its visible answer, which is
+ * what made the first set of numbers wrong: a ceiling sized for the answer got
+ * spent on thinking, and the call came back with nothing in it. They are sized
+ * for both now. A ceiling that truncates is not a saving — the writer presses
+ * the button again and pays twice.
  */
-export const CHAT_MAX_TOKENS = 1_200;
-export const COMPOSE_MAX_TOKENS = 8_000;
+export const CHAT_MAX_TOKENS = 3_000;
+export const COMPOSE_MAX_TOKENS = 16_000;
+export const FILING_MAX_TOKENS = 4_000;
 
 /** Thrown when the key is missing, so the route can say so in plain words. */
 export class MissingCompanionKey extends Error {

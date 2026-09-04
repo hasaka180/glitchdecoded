@@ -8,6 +8,7 @@ import { ID } from "node-appwrite";
 import { DATABASE_ID, TABLES } from "@/lib/appwrite/config";
 import { createAdminClient } from "@/lib/appwrite/server";
 import { MissingCompanionKey } from "@/lib/ai/client";
+import { RanOutOfRoom } from "@/lib/ai/fields";
 import {
   composeFromThread,
   EmptyConversation,
@@ -40,6 +41,7 @@ function readableError(error: unknown): string {
 
   if (error instanceof MissingCompanionKey) return error.message;
   if (error instanceof EmptyConversation) return error.message;
+  if (error instanceof RanOutOfRoom) return error.message;
   if (error instanceof APIError) {
     if (error.status === 429) {
       return "The model is rate limited right now. Wait a moment and try again.";
@@ -114,6 +116,7 @@ export async function composeDraft(
     category: String(formData.get("category") ?? "") || article.category,
     status: article.status,
     reviewNote: article.reviewNote,
+    hasCover: Boolean(article.coverImageUrl),
   };
 
   let composed: ComposedDraft;
@@ -192,13 +195,13 @@ export async function startPieceFromConversation(
       coverSource: null,
       coverPrompt: null,
       coverAlt: null,
-      topics: [],
+      topics: composed.topics,
       minutes: readingMinutes(composed.body),
       views: 0,
       likes: 0,
       dislikes: 0,
-      seoTitle: null,
-      seoDescription: null,
+      seoTitle: composed.seoTitle || null,
+      seoDescription: composed.seoDescription || null,
       reviewNote: null,
       reviewedBy: null,
       reviewedAt: null,

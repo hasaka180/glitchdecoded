@@ -91,6 +91,8 @@ export type DraftContext = {
   status: string;
   /** The desk's last note, when there is one — it is usually the live question. */
   reviewNote?: string | null;
+  /** Whether a cover has been uploaded, so alt text is only asked for when there is one. */
+  hasCover?: boolean;
 };
 
 /**

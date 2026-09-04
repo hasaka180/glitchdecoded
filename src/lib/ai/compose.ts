@@ -8,6 +8,15 @@ import {
   COMPOSE_EFFORT,
   COMPOSE_MAX_TOKENS,
 } from "./client";
+import {
+  coverNote,
+  FILING_INSTRUCTION,
+  FILING_KEYS,
+  FILING_PROPERTIES,
+  readFiling,
+  readJsonContent,
+  type Filing,
+} from "./fields";
 import { systemPrompts, type DraftContext } from "./companion";
 import type { CompanionRow } from "./thread";
 
@@ -19,7 +28,15 @@ import type { CompanionRow } from "./thread";
  * and lays out the piece it produced, in the shape the editor's form expects.
  */
 
-export type ComposedDraft = {
+/**
+ * Everything the editor's form holds, except the cover image itself.
+ *
+ * One press fills the piece and files it: a writer who has just watched their
+ * conversation become a draft should not then have to go and tag it and write
+ * a search description for it by hand. The image is the one thing left alone —
+ * nobody can choose a photograph from a transcript.
+ */
+export type ComposedDraft = Filing & {
   title: string;
   dek: string;
   category: CategorySlug;
@@ -43,7 +60,11 @@ Everything above is the raw material: what the writer told you, in their words, 
 - Pick the perspective the piece actually belongs under.
 - In "note", tell the writer in two or three sentences what you had to guess at, what you left as a gap, and what only they can supply. Write it to them, plainly.
 
-This is a first draft they will rewrite, not a finished piece. Do not tell them it's finished.`;
+This is a first draft they will rewrite, not a finished piece. Do not tell them it's finished.
+
+Then file it. These describe the piece you have just written, not the conversation:
+
+${FILING_INSTRUCTION}`;
 
 /** Strict schema, so the fields drop straight into the editor without parsing luck. */
 const SCHEMA = {
@@ -54,8 +75,9 @@ const SCHEMA = {
     category: { type: "string", enum: SLUGS, description: "Perspective slug." },
     body: { type: "string", description: "The piece, in Markdown." },
     note: { type: "string", description: "A short note to the writer." },
+    ...FILING_PROPERTIES,
   },
-  required: ["title", "dek", "category", "body", "note"],
+  required: ["title", "dek", "category", "body", "note", ...FILING_KEYS],
   additionalProperties: false,
 } as const;
 
@@ -80,13 +102,18 @@ export async function composeFromThread(input: {
     throw new EmptyConversation();
   }
 
+  const hasCover = Boolean(input.draft?.hasCover);
+
   const messages = [
     ...systemPrompts(input.writerName, input.draft, "compose").map((content) => ({
       role: "developer" as const,
       content,
     })),
     ...input.thread.map((row) => ({ role: row.role, content: row.body })),
-    { role: "developer" as const, content: INSTRUCTION },
+    {
+      role: "developer" as const,
+      content: `${INSTRUCTION}\n\n${coverNote(hasCover)}`,
+    },
   ];
 
   const completion = await companionClient().chat.completions.create({
@@ -104,16 +131,14 @@ export async function composeFromThread(input: {
     },
   });
 
-  const raw = completion.choices[0]?.message?.content;
-  if (!raw) throw new Error("The write-up came back empty.");
-
-  const parsed = JSON.parse(raw) as Record<string, unknown>;
+  const parsed = readJsonContent(completion);
   const str = (key: string) =>
     typeof parsed[key] === "string" ? (parsed[key] as string) : "";
 
   const category = str("category");
 
   return {
+    ...readFiling(parsed, hasCover),
     title: str("title").trim().slice(0, MAX_TITLE) || "Untitled",
     dek: str("dek").trim().slice(0, MAX_DEK),
     // `strict` constrains the enum, but the value still crosses a boundary and

@@ -294,6 +294,12 @@ export default function ArticleEditor({
     setDek(composed.dek);
     setBody(composed.body);
     setCategory(composed.category);
+    // Filed in the same press. Everything the form holds except the cover
+    // image, which nobody can pick from a transcript.
+    setTopics(composed.topics);
+    setSeoTitle(composed.seoTitle);
+    setSeoDescription(composed.seoDescription);
+    if (composed.coverAlt) setCoverAlt(composed.coverAlt);
     setTab("write");
   }, []);
 

@@ -3,6 +3,7 @@
 import { APIError } from "openai";
 
 import { MissingCompanionKey } from "@/lib/ai/client";
+import { RanOutOfRoom } from "@/lib/ai/fields";
 import { NothingToDescribe, suggestSeo, type SeoSuggestion } from "@/lib/ai/seo";
 import { getArticleById } from "@/lib/articles/queries";
 import { canEditArticle, getCurrentUser } from "@/lib/auth/dal";
@@ -48,6 +49,7 @@ export async function suggestSeoFields(
     console.error("[seo]", error);
     if (error instanceof MissingCompanionKey) return { error: error.message };
     if (error instanceof NothingToDescribe) return { error: error.message };
+    if (error instanceof RanOutOfRoom) return { error: error.message };
     if (error instanceof APIError) {
       return { error: `Couldn't draft those (${error.status ?? "no response"}).` };
     }
