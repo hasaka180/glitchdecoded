@@ -121,7 +121,9 @@ export default function VideoLibrary() {
 
   return (
     <div>
-      <div className="grid gap-6 lg:grid-cols-[7fr_5fr] lg:gap-8">
+      {/* Same guard as the screening room: a bare track measures its content,
+          and a fixed-width child would haul the whole set off the screen. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-8">
       {/* The set: cabinet, perforated edges, picture. */}
       {/* The cabinet's chrome is fixed furniture, so on a phone it is the
           picture that pays for it — 44px of a 390px screen went on padding,

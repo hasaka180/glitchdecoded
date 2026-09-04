@@ -241,7 +241,13 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
           </p>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-[7fr_5fr] lg:gap-8">
+        {/* minmax(0,…) on both tracks, never a bare `auto` or `fr`. A grid
+            track's automatic minimum is its content's, so the rail of cans
+            below — six fixed-width cards on one row — sized the column to its
+            own max-content and dragged the set out to three times the screen
+            with it. `overflow-x: auto` lets that rail scroll, but it does not
+            stop a track from measuring it. */}
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-8">
           {/* The set: cabinet, perforated edges, picture. */}
           <div className="reel-set pixel-corner relative bg-black p-3 text-[color:var(--bone)] sm:p-4">
             <span aria-hidden className="sprockets absolute inset-y-4 left-[6px] w-[6px] opacity-40" />

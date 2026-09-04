@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { useNarrow } from "@/lib/useNarrow";
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
 import NoteWall from "./NoteWall";
@@ -57,10 +56,10 @@ const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
  * sheet on the left and uncovered from the right, this one holds it on the
  * right and uncovers from the left.
  *
- * The tear runs at every width. Below lg the archive is one column rather than
- * two, so on a phone the set and its rail tighten to hold the pair inside one
- * viewport (see the `max-md:` pass in ScreeningRoom) and the runway shortens
- * to suit a thumb.
+ * The tear runs at every width, off one runway — the same length everywhere,
+ * for the reason RipStage gives. Below lg the archive is one column rather
+ * than two, so on a phone the set and its rail tighten to hold the pair inside
+ * one viewport (see `.stage-tight` in globals.css).
  *
  * Under reduced motion there is still no pinning: the archive runs at its
  * natural height, the horizontal PaperTear does the transition, and the board
@@ -68,7 +67,6 @@ const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
  */
 export default function NoteRip() {
   const ref = useRef<HTMLDivElement | null>(null);
-  const narrow = useNarrow(768);
   const reduced = useReducedMotion();
   const [progress, setProgress] = useState(0);
 
@@ -119,7 +117,7 @@ export default function NoteRip() {
   const edge = -6 + rip * 113;
 
   return (
-    <div ref={ref} className={`relative ${narrow ? "h-[300vh]" : "h-[440vh]"}`}>
+    <div ref={ref} className="relative h-[440vh]">
       <div className="sticky top-0 h-[100lvh] overflow-hidden bg-[color:var(--ink)]">
         <div className="absolute inset-0">
           <NoteWall inStage reveal={reveal} />
