@@ -8,7 +8,7 @@ import {
   deleteStoredImage,
   imageProblem,
   storeImage,
-} from "@/lib/appwrite/images";
+} from "@/lib/storage/images";
 import { createAdminClient } from "@/lib/appwrite/server";
 import { listNoteRows, type NoteRow } from "@/lib/notes/queries";
 import { SEED } from "@/lib/notes/seed";

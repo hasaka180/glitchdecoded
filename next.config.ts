@@ -10,6 +10,17 @@ const nextConfig: NextConfig = {
   // as blocked. Development only; production serves static chunks and is not
   // affected either way.
   allowedDevOrigins: ["192.168.1.*", "*.local"],
+  experimental: {
+    serverActions: {
+      // Covers and note pictures are accepted up to COVER_MAX_BYTES (8 MB) and
+      // ride to the server inside the Server Action's own request, which is
+      // capped at 1 MB by default — so without this, every upload over 1 MB
+      // was rejected by the framework before `imageProblem` ever saw it. The
+      // extra megabyte is headroom for the boundaries and part headers
+      // multipart adds on top of the file itself.
+      bodySizeLimit: "9mb",
+    },
+  },
 };
 
 export default nextConfig;

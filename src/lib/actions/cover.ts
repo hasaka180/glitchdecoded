@@ -7,7 +7,7 @@ import {
   deleteStoredImage,
   imageProblem,
   storeImage,
-} from "@/lib/appwrite/images";
+} from "@/lib/storage/images";
 import { createAdminClient } from "@/lib/appwrite/server";
 import { getArticleById } from "@/lib/articles/queries";
 import { canEditArticle, getCurrentUser } from "@/lib/auth/dal";

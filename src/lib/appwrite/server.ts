@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
-import { Account, Client, Storage, TablesDB, Users } from "node-appwrite";
+import { Account, Client, TablesDB, Users } from "node-appwrite";
 
 import {
   APPWRITE_ENDPOINT,
@@ -40,9 +40,6 @@ export async function createSessionClient() {
     get tablesDB() {
       return new TablesDB(client);
     },
-    get storage() {
-      return new Storage(client);
-    },
   };
 }
 
@@ -72,9 +69,6 @@ export function createAdminClient() {
     },
     get tablesDB() {
       return new TablesDB(client);
-    },
-    get storage() {
-      return new Storage(client);
     },
     get users() {
       return new Users(client);

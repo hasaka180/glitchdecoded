@@ -18,14 +18,12 @@ import {
   Permission,
   Query,
   Role,
-  Storage,
   TablesDB,
   TablesDBIndexType,
   Users,
 } from "node-appwrite";
 
 const DATABASE_ID = "glitch";
-const BUCKET_ID = "article-images";
 const SUPERADMIN_LABEL = "superadmin";
 
 const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT;
@@ -47,7 +45,6 @@ const client = new Client()
   .setKey(apiKey);
 
 const tablesDB = new TablesDB(client);
-const storage = new Storage(client);
 const users = new Users(client);
 
 /** Appwrite's "already exists" so a re-run is a no-op rather than a failure. */
@@ -381,39 +378,6 @@ async function ensureDatabase() {
   console.log(`  created  ${DATABASE_ID}`);
 }
 
-/**
- * Creates the image bucket, or confirms the one already there.
- *
- * Checked rather than create-and-swallow-409 for the same reason as the
- * database: on a capped plan a second create is answered with "maximum number
- * of buckets reached" rather than a conflict, which would fail every re-run
- * once the bucket exists.
- */
-async function ensureBucket() {
-  try {
-    await storage.getBucket({ bucketId: BUCKET_ID });
-    console.log(`  exists   ${BUCKET_ID}`);
-    return;
-  } catch (error) {
-    if (error?.code !== 404) throw error;
-  }
-
-  await storage.createBucket({
-    bucketId: BUCKET_ID,
-    name: "Article images",
-    // Files are served publicly once an article is live; uploads always go
-    // through a Server Action holding the API key.
-    permissions: [Permission.read(Role.any())],
-    fileSecurity: false,
-    maximumFileSize: 8 * 1024 * 1024,
-    allowedFileExtensions: ["jpg", "jpeg", "png", "webp", "gif", "avif"],
-    compression: "gzip",
-    encryption: true,
-    antivirus: true,
-  });
-  console.log(`  created  ${BUCKET_ID}`);
-}
-
 async function main() {
   const superadminFlag = process.argv.indexOf("--superadmin");
   if (superadminFlag !== -1) {
@@ -470,9 +434,6 @@ async function main() {
       );
     }
   }
-
-  console.log("\nStorage");
-  await ensureBucket();
 
   console.log(
     "\nDone.\n\n" +
