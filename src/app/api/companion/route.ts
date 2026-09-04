@@ -1,5 +1,5 @@
-import type Anthropic from "@anthropic-ai/sdk";
-import { APIError } from "@anthropic-ai/sdk";
+import { APIError } from "openai";
+import type OpenAI from "openai";
 
 import {
   COMPANION_EFFORT,
@@ -9,7 +9,7 @@ import {
 } from "@/lib/ai/client";
 import {
   MODE_METHOD,
-  systemBlocks,
+  systemPrompts,
   type DraftContext,
 } from "@/lib/ai/companion";
 import { isCompanionMode, type CompanionMode } from "@/lib/ai/modes";
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 
   if (!companionConfigured()) {
     return fail(
-      "The companion isn't switched on for this site yet — ANTHROPIC_API_KEY is missing from the server's environment.",
+      "The companion isn't switched on for this site yet — OPENAI_API_KEY is missing from the server's environment.",
       503,
     );
   }
@@ -140,19 +140,27 @@ export async function POST(request: Request) {
 
   const history = await listThread(user.id, articleId);
 
-  const messages: Anthropic.MessageParam[] = [];
+  // The brief first and the draft second, both as `developer` turns: they are
+  // instructions from the site, not from the writer, and the split keeps the
+  // frozen half at the front where prompt caching can reuse it.
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = systemPrompts(
+    user.name,
+    draft,
+  ).map((content) => ({ role: "developer", content }));
+
+  const opening = messages.length;
   for (const row of history) {
-    // The window can slice into the middle of a thread, and the API needs a
-    // user turn first; leading answers from a previous session are dropped.
-    if (messages.length === 0 && row.role !== "user") continue;
+    // The window can slice into the middle of a thread; a leading answer from
+    // a previous session, with nothing it was answering, is dropped.
+    if (messages.length === opening && row.role !== "user") continue;
     messages.push({ role: row.role, content: row.body });
   }
   messages.push({ role: "user", content: message });
 
-  // The quick ask's method rides along as a mid-conversation system message,
-  // so pressing a button changes this turn without touching — and so without
-  // invalidating — the cached brief above it.
-  if (mode) messages.push({ role: "system", content: MODE_METHOD[mode] });
+  // The quick ask's method rides along at the end as one more instruction, so
+  // pressing a button changes this turn without touching — and so without
+  // invalidating — the cached brief at the front.
+  if (mode) messages.push({ role: "developer", content: MODE_METHOD[mode] });
 
   await appendMessage({
     userId: user.id,
@@ -162,18 +170,18 @@ export async function POST(request: Request) {
     mode,
   });
 
-  const stream = companionClient().messages.stream({
-    model: COMPANION_MODEL,
-    max_tokens: 8_000,
-    thinking: { type: "adaptive" },
-    output_config: { effort: COMPANION_EFFORT },
-    system: systemBlocks(user.name, draft),
-    messages,
-  });
-
   // A writer who closes the panel mid-answer shouldn't keep paying for the
-  // rest of it.
-  request.signal.addEventListener("abort", () => stream.abort());
+  // rest of it, so the model call is tied to the request's own signal.
+  const stream = await companionClient().chat.completions.create(
+    {
+      model: COMPANION_MODEL,
+      max_completion_tokens: 8_000,
+      reasoning_effort: COMPANION_EFFORT,
+      messages,
+      stream: true,
+    },
+    { signal: request.signal },
+  );
 
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -191,15 +199,13 @@ export async function POST(request: Request) {
       };
 
       try {
-        for await (const event of stream) {
-          // Only visible prose is forwarded. Thinking blocks stream too, with
-          // their text empty under the default display setting.
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            answer += event.delta.text;
-            push({ t: event.delta.text });
+        for await (const chunk of stream) {
+          // Only the prose. A reasoning model's own thinking never appears in
+          // `content`, and a refusal arrives on its own field rather than here.
+          const piece = chunk.choices[0]?.delta?.content;
+          if (piece) {
+            answer += piece;
+            push({ t: piece });
           }
         }
       } catch (error) {
@@ -242,7 +248,8 @@ export async function POST(request: Request) {
     },
 
     cancel() {
-      stream.abort();
+      // Hangs up on the model as soon as the reader is gone.
+      void stream.controller.abort();
     },
   });
 

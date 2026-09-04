@@ -8,10 +8,10 @@ import type { CompanionMode } from "./modes";
  * The companion's brief.
  *
  * Two halves, deliberately: a frozen half that never varies from request to
- * request and carries the cache breakpoint, and a volatile half holding the
- * draft as it stands right now. Anything with a timestamp, a word count or a
- * paragraph of the writer's prose in it belongs in the second block — a byte
- * of it in the first would invalidate the cache on every message.
+ * request, and a volatile half holding the draft as it stands right now. The
+ * frozen half goes first because prompt caching is a prefix match — anything
+ * with a word count or a paragraph of the writer's prose in it belongs in the
+ * second, or every message would start from a cold cache.
  */
 
 const PERSPECTIVES = CATEGORIES.map(
@@ -137,10 +137,10 @@ export const MODE_METHOD: Record<CompanionMode, string> = {
   draft: `Give them a passage: a paragraph or two on the part you have been discussing, pitched as close to their own register as the draft lets you read it. Say plainly that it is raw material and name what you were guessing at, so they can correct the guess. Then ask one question about the part you could not guess.`,
 };
 
-/** The system blocks for a request, stable half first so it can be cached. */
-export function systemBlocks(writerName: string, draft: DraftContext | null) {
-  return [
-    { type: "text" as const, text: BRIEF, cache_control: { type: "ephemeral" as const } },
-    { type: "text" as const, text: draftBlock(writerName, draft) },
-  ];
+/** The system turns for a request, stable half first so the prefix can cache. */
+export function systemPrompts(
+  writerName: string,
+  draft: DraftContext | null,
+): string[] {
+  return [BRIEF, draftBlock(writerName, draft)];
 }

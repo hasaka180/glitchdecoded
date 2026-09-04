@@ -277,7 +277,7 @@ export default function Companion({
           <p className="pixel-corner-sm mb-4 bg-white/[0.06] px-4 py-3 font-garamond text-[15px] leading-[1.5] opacity-75">
             The companion isn&rsquo;t switched on for this site yet. Add
             <code className="mx-1 bg-white/10 px-1.5 py-0.5 font-mono text-[13px]">
-              ANTHROPIC_API_KEY
+              OPENAI_API_KEY
             </code>
             to the server&rsquo;s environment and restart.
           </p>
