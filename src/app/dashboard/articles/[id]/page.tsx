@@ -5,6 +5,8 @@ import ArticleEditor, {
   type EditorArticle,
   type EditorRevision,
 } from "@/components/cms/ArticleEditor";
+import { companionConfigured } from "@/lib/ai/client";
+import { listThread, toMessage } from "@/lib/ai/thread";
 import { getArticleById, listRevisions } from "@/lib/articles/queries";
 import { canEditArticle, ownsArticle, requireUser } from "@/lib/auth/dal";
 
@@ -25,7 +27,10 @@ export default async function EditArticlePage({
   // can't see this" would confirm which ids exist.
   if (!article || !ownsArticle(user, article)) notFound();
 
-  const revisions = await listRevisions(article.$id, 20);
+  const [revisions, thread] = await Promise.all([
+    listRevisions(article.$id, 20),
+    listThread(user.id, article.$id),
+  ]);
 
   // Only the fields the editor renders cross the boundary — the row also
   // carries view counts, reviewer ids and reaction totals it has no use for.
@@ -58,6 +63,8 @@ export default async function EditArticlePage({
       revisions={history}
       canEdit={canEditArticle(user, article)}
       isSuperadmin={user.isSuperadmin}
+      companion={thread.map(toMessage)}
+      companionConfigured={companionConfigured()}
     />
   );
 }

@@ -118,11 +118,23 @@ export default async function DashboardPage({
           </h1>
         </div>
 
-        <form action={createArticle}>
-          <SubmitButton className={BUTTON_PRIMARY} pendingLabel="Opening…">
-            Start a new piece
-          </SubmitButton>
-        </form>
+        <div className="flex flex-wrap items-center gap-4">
+          {/* The blank page is where most pieces die, so the way out of it sits
+              next to the button that creates one. */}
+          <Link
+            href="/dashboard/companion"
+            className="pixel-corner-sm inline-flex items-center justify-center bg-[color:var(--cyan)]/15 px-5 py-3 font-arial text-[10px] font-bold tracking-[0.18em] uppercase ring-1 ring-[color:var(--cyan)]/40 transition-colors hover:bg-[color:var(--cyan)]/25"
+            style={{ color: "var(--cyan)" }}
+          >
+            Talk it through
+          </Link>
+
+          <form action={createArticle}>
+            <SubmitButton className={BUTTON_PRIMARY} pendingLabel="Opening…">
+              Start a new piece
+            </SubmitButton>
+          </form>
+        </div>
       </header>
 
       {articles.length === 0 ? (
@@ -132,7 +144,14 @@ export default async function DashboardPage({
           </p>
           <p className="mx-auto mt-3 max-w-[42ch] font-garamond text-[16px] opacity-45">
             Start a piece and it stays a private draft until you hand it to the
-            desk.
+            desk. If you don&rsquo;t know what the piece is yet,{" "}
+            <Link
+              href="/dashboard/companion"
+              className="underline decoration-[color:var(--cyan)] decoration-2 underline-offset-4 transition-colors hover:text-[color:var(--cyan)]"
+            >
+              talk it through first
+            </Link>
+            .
           </p>
         </div>
       ) : (

@@ -257,6 +257,30 @@ const SCHEMA = [
       { key: "by_article", type: TablesDBIndexType.Key, columns: ["articleId"] },
     ],
   },
+  {
+    id: "companion_messages",
+    name: "Companion messages",
+    columns: [
+      str("userId", 64, true),
+      // The piece the thread belongs to, or the sentinel "desk" for the
+      // blank-page conversation that belongs to no piece yet.
+      str("articleId", 64, true),
+      enumCol("role", ["user", "assistant"], true),
+      longtext("body"),
+      // Which quick ask produced the turn, when one did. Kept for reading a
+      // thread back later, not used to re-run anything.
+      str("mode", 40),
+    ],
+    indexes: [
+      // Every read is "this writer, this thread" — there is no query in the
+      // app that looks at one writer's messages across every piece.
+      {
+        key: "by_thread",
+        type: TablesDBIndexType.Key,
+        columns: ["userId", "articleId"],
+      },
+    ],
+  },
 ];
 
 /**
@@ -293,6 +317,39 @@ async function ensureDatabase() {
   }
   await tablesDB.create({ databaseId: DATABASE_ID, name: "Glitch" });
   console.log(`  created  ${DATABASE_ID}`);
+}
+
+/**
+ * Creates the image bucket, or confirms the one already there.
+ *
+ * Checked rather than create-and-swallow-409 for the same reason as the
+ * database: on a capped plan a second create is answered with "maximum number
+ * of buckets reached" rather than a conflict, which would fail every re-run
+ * once the bucket exists.
+ */
+async function ensureBucket() {
+  try {
+    await storage.getBucket({ bucketId: BUCKET_ID });
+    console.log(`  exists   ${BUCKET_ID}`);
+    return;
+  } catch (error) {
+    if (error?.code !== 404) throw error;
+  }
+
+  await storage.createBucket({
+    bucketId: BUCKET_ID,
+    name: "Article images",
+    // Files are served publicly once an article is live; uploads always go
+    // through a Server Action holding the API key.
+    permissions: [Permission.read(Role.any())],
+    fileSecurity: false,
+    maximumFileSize: 8 * 1024 * 1024,
+    allowedFileExtensions: ["jpg", "jpeg", "png", "webp", "gif", "avif"],
+    compression: "gzip",
+    encryption: true,
+    antivirus: true,
+  });
+  console.log(`  created  ${BUCKET_ID}`);
 }
 
 async function main() {
@@ -353,21 +410,7 @@ async function main() {
   }
 
   console.log("\nStorage");
-  await idempotent(BUCKET_ID, () =>
-    storage.createBucket({
-      bucketId: BUCKET_ID,
-      name: "Article images",
-      // Files are served publicly once an article is live; uploads always go
-      // through a Server Action holding the API key.
-      permissions: [Permission.read(Role.any())],
-      fileSecurity: false,
-      maximumFileSize: 8 * 1024 * 1024,
-      allowedFileExtensions: ["jpg", "jpeg", "png", "webp", "gif", "avif"],
-      compression: "gzip",
-      encryption: true,
-      antivirus: true,
-    }),
-  );
+  await ensureBucket();
 
   console.log(
     "\nDone.\n\n" +

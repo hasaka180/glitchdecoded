@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 
+import CompanionDrawer from "@/components/cms/CompanionDrawer";
 import Markdown from "@/components/cms/Markdown";
 import StatusPill from "@/components/cms/StatusPill";
 import SubmitButton from "@/components/cms/SubmitButton";
@@ -24,6 +25,7 @@ import {
   withdrawFromReview,
   type ArticleState,
 } from "@/lib/actions/articles";
+import type { CompanionMessage } from "@/lib/ai/modes";
 import type { ArticleStatus } from "@/lib/articles/types";
 import { readingMinutes } from "@/lib/articles/types";
 import { CATEGORIES } from "@/lib/categories";
@@ -61,11 +63,16 @@ export default function ArticleEditor({
   revisions,
   canEdit,
   isSuperadmin,
+  companion,
+  companionConfigured,
 }: {
   article: EditorArticle;
   revisions: EditorRevision[];
   canEdit: boolean;
   isSuperadmin: boolean;
+  /** This piece's conversation with the companion, oldest turn first. */
+  companion: CompanionMessage[];
+  companionConfigured: boolean;
 }) {
   const [title, setTitle] = useState(article.title);
   const [dek, setDek] = useState(article.dek);
@@ -189,6 +196,15 @@ export default function ArticleEditor({
     restoreState.error;
 
   const words = body.trim() ? body.trim().split(/\s+/).length : 0;
+
+  // The companion reads the draft at the moment a message is sent, so it sees
+  // the paragraph just typed rather than the last autosave. Kept in a ref so
+  // the callback handed to the panel stays stable while the writer types.
+  const draftRef = useRef({ title, dek, body, category });
+  useEffect(() => {
+    draftRef.current = { title, dek, body, category };
+  }, [title, dek, body, category]);
+  const getDraft = useCallback(() => draftRef.current, []);
 
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
@@ -376,6 +392,20 @@ export default function ArticleEditor({
             {error}
           </p>
         )}
+
+        <div>
+          <p className={EYEBROW}>The room</p>
+          <p className="mt-3 mb-4 font-garamond text-[15px] leading-[1.45] opacity-45">
+            A companion that reads what you have so far and asks about it.
+            It won&rsquo;t write the piece for you.
+          </p>
+          <CompanionDrawer
+            articleId={article.id}
+            initial={companion}
+            configured={companionConfigured}
+            getDraft={getDraft}
+          />
+        </div>
 
         <div>
           <p className={EYEBROW}>Perspective</p>

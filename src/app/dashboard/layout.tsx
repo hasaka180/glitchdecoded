@@ -35,6 +35,12 @@ export default async function DashboardLayout({
             >
               My pieces
             </Link>
+            <Link
+              href="/dashboard/companion"
+              className="font-arial text-[10px] font-bold tracking-[0.18em] uppercase opacity-60 transition-opacity hover:opacity-100"
+            >
+              The room
+            </Link>
             {user.isSuperadmin && (
               <Link
                 href="/dashboard/review"
