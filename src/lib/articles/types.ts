@@ -63,6 +63,10 @@ export type ArticleRow = Models.Row & {
   /** How the cover was obtained, so the editor can show its provenance. */
   coverSource: "upload" | "ai" | null;
   coverPrompt: string | null;
+  /** Describes the cover for screen readers and for search. */
+  coverAlt: string | null;
+  /** Topic slugs from `lib/topics.ts`. What the piece is about, across categories. */
+  topics: string[];
   minutes: number;
   views: number;
   likes: number;

@@ -10,6 +10,12 @@ import { listThread, toMessage } from "@/lib/ai/thread";
 import { getArticleById, listRevisions } from "@/lib/articles/queries";
 import { canEditArticle, ownsArticle, requireUser } from "@/lib/auth/dal";
 
+/**
+ * The write-up is a Server Action on this page, and a Server Action's ceiling
+ * comes from the page it was called on rather than from the action itself.
+ */
+export const maxDuration = 60;
+
 export const metadata: Metadata = {
   title: "Editing — The desk",
   robots: { index: false, follow: false },
@@ -44,6 +50,9 @@ export default async function EditArticlePage({
     status: article.status,
     seoTitle: article.seoTitle ?? "",
     seoDescription: article.seoDescription ?? "",
+    coverImageUrl: article.coverImageUrl,
+    coverAlt: article.coverAlt ?? "",
+    topics: article.topics ?? [],
     reviewNote: article.reviewNote,
     reviewedBy: article.reviewedBy,
     updatedAt: article.$updatedAt,

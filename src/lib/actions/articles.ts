@@ -11,6 +11,7 @@ import {
   listRevisions,
   slugExists,
 } from "@/lib/articles/queries";
+import { snapshotArticle } from "@/lib/articles/revisions";
 import type { ArticleRow, ArticleStatus } from "@/lib/articles/types";
 import { EDITABLE_STATUSES, readingMinutes, slugify } from "@/lib/articles/types";
 import {
@@ -22,6 +23,7 @@ import {
   type SessionUser,
 } from "@/lib/auth/dal";
 import { isCategorySlug } from "@/lib/categories";
+import { isTopicSlug, MAX_TOPICS } from "@/lib/topics";
 
 export type ArticleState = {
   error?: string;
@@ -82,7 +84,15 @@ function readFields(formData: FormData) {
   const seoDescription = String(formData.get("seoDescription") ?? "")
     .trim()
     .slice(0, 300);
-  return { title, dek, body, category, seoTitle, seoDescription };
+  const coverAlt = String(formData.get("coverAlt") ?? "").trim().slice(0, 300);
+  // Checkboxes, so the browser sends one entry per ticked topic. Unknown
+  // slugs are dropped rather than rejected — the form is not the place to
+  // discover that the topic list changed under a draft.
+  const topics = formData
+    .getAll("topics")
+    .filter(isTopicSlug)
+    .slice(0, MAX_TOPICS);
+  return { title, dek, body, category, seoTitle, seoDescription, coverAlt, topics };
 }
 
 /**
@@ -111,21 +121,7 @@ async function snapshot(
     }
   }
 
-  await db().createRow({
-    databaseId: DATABASE_ID,
-    tableId: TABLES.revisions,
-    rowId: ID.unique(),
-    data: {
-      articleId: article.$id,
-      title: article.title,
-      dek: article.dek,
-      body: article.body,
-      category: article.category,
-      savedBy: user.id,
-      savedByName: user.name,
-      note,
-    },
-  });
+  await snapshotArticle(article, user, note);
 }
 
 /** Starts a new empty draft and drops the writer straight into the editor. */
@@ -149,6 +145,8 @@ export async function createArticle() {
       coverImageUrl: null,
       coverSource: null,
       coverPrompt: null,
+      coverAlt: null,
+      topics: [],
       minutes: 1,
       views: 0,
       likes: 0,
@@ -204,6 +202,8 @@ export async function saveArticle(
       slug,
       seoTitle: fields.seoTitle || null,
       seoDescription: fields.seoDescription || null,
+      coverAlt: fields.coverAlt || null,
+      topics: fields.topics,
       minutes: readingMinutes(fields.body),
     },
   });
@@ -248,6 +248,8 @@ export async function autosaveArticle(
       category,
       seoTitle: fields.seoTitle || null,
       seoDescription: fields.seoDescription || null,
+      coverAlt: fields.coverAlt || null,
+      topics: fields.topics,
       minutes: readingMinutes(fields.body),
     },
   });
@@ -307,6 +309,8 @@ export async function submitForReview(
       category,
       seoTitle: fields.seoTitle || null,
       seoDescription: fields.seoDescription || null,
+      coverAlt: fields.coverAlt || null,
+      topics: fields.topics,
       minutes: readingMinutes(body),
       status: "in_review" satisfies ArticleStatus,
       submittedAt: new Date().toISOString(),

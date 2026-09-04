@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 
 import CompanionDrawer from "@/components/cms/CompanionDrawer";
+import CoverField from "@/components/cms/CoverField";
 import Markdown from "@/components/cms/Markdown";
 import StatusPill from "@/components/cms/StatusPill";
 import SubmitButton from "@/components/cms/SubmitButton";
@@ -25,10 +26,13 @@ import {
   withdrawFromReview,
   type ArticleState,
 } from "@/lib/actions/articles";
+import { suggestSeoFields } from "@/lib/actions/seo";
+import type { ComposedDraft } from "@/lib/ai/compose";
 import type { CompanionMessage } from "@/lib/ai/modes";
 import type { ArticleStatus } from "@/lib/articles/types";
 import { readingMinutes } from "@/lib/articles/types";
 import { CATEGORIES } from "@/lib/categories";
+import { MAX_TOPICS, TOPICS } from "@/lib/topics";
 import { formatDateTime } from "@/lib/format";
 
 /** Only what the editor actually renders crosses from the server. */
@@ -42,6 +46,9 @@ export type EditorArticle = {
   status: ArticleStatus;
   seoTitle: string;
   seoDescription: string;
+  coverImageUrl: string | null;
+  coverAlt: string;
+  topics: string[];
   reviewNote: string | null;
   reviewedBy: string | null;
   updatedAt: string;
@@ -80,9 +87,74 @@ export default function ArticleEditor({
   const [category, setCategory] = useState(article.category);
   const [seoTitle, setSeoTitle] = useState(article.seoTitle);
   const [seoDescription, setSeoDescription] = useState(article.seoDescription);
+  const [coverAlt, setCoverAlt] = useState(article.coverAlt);
+  const [topics, setTopics] = useState<string[]>(article.topics);
+
+  function toggleTopic(slug: string) {
+    setTopics((current) =>
+      current.includes(slug)
+        ? current.filter((t) => t !== slug)
+        : current.length >= MAX_TOPICS
+          ? current
+          : [...current, slug],
+    );
+  }
+
+  // --- search and social, drafted from the piece ----------------------------
+  const [seoPending, setSeoPending] = useState(false);
+  const [seoError, setSeoError] = useState<string | null>(null);
+
+  /**
+   * Called straight from the click rather than through `useActionState`: the
+   * result has to land in six controlled fields, and an action hook would mean
+   * copying it out of render state in an effect.
+   */
+  async function draftSeo() {
+    setSeoPending(true);
+    setSeoError(null);
+
+    const payload = new FormData();
+    payload.set("articleId", article.id);
+    payload.set("title", title);
+    payload.set("dek", dek);
+    payload.set("body", body);
+    payload.set("category", category);
+
+    try {
+      const result = await suggestSeoFields({}, payload);
+      if (result.error) setSeoError(result.error);
+      if (result.fields) {
+        setTopics(result.fields.topics);
+        // The written fields are only filled where they are empty. A writer who
+        // has already chosen their search title meant it, and this button is
+        // reached for to tag the piece as often as to rewrite that.
+        if (!seoTitle.trim()) setSeoTitle(result.fields.seoTitle);
+        if (!seoDescription.trim()) {
+          setSeoDescription(result.fields.seoDescription);
+        }
+        if (!coverAlt.trim() && result.fields.coverAlt) {
+          setCoverAlt(result.fields.coverAlt);
+        }
+      }
+    } catch {
+      setSeoError("Couldn't draft those. Try again.");
+    } finally {
+      setSeoPending(false);
+    }
+  }
 
   const [tab, setTab] = useState<"write" | "preview">("write");
-  const [showSeo, setShowSeo] = useState(false);
+  /**
+   * Open when there is something to do in there.
+   *
+   * The section was collapsed by default and the assist that fills it was
+   * therefore invisible — a writer who has never expanded it has no way to
+   * learn the button exists. Once both fields are written, it folds away
+   * again and stops taking up the room.
+   */
+  const [showSeo, setShowSeo] = useState(
+    !article.seoTitle || !article.seoDescription,
+  );
 
   // `isPending` rather than `useFormStatus` for the two rail buttons: they
   // reach the editor form through the `form` attribute, and useFormStatus only
@@ -131,6 +203,8 @@ export default function ArticleEditor({
       form.set("category", category);
       form.set("seoTitle", seoTitle);
       form.set("seoDescription", seoDescription);
+      form.set("coverAlt", coverAlt);
+      for (const topic of topics) form.append("topics", topic);
 
       setAutosaving(true);
       try {
@@ -155,6 +229,8 @@ export default function ArticleEditor({
     category,
     seoTitle,
     seoDescription,
+    coverAlt,
+    topics,
     article.id,
     canEdit,
   ]);
@@ -206,6 +282,21 @@ export default function ArticleEditor({
   }, [title, dek, body, category]);
   const getDraft = useCallback(() => draftRef.current, []);
 
+  /**
+   * Drops a written-up draft into the form.
+   *
+   * State rather than a save: the writer sees it arrive in the fields they
+   * were already looking at, autosave carries it to the server a beat later,
+   * and the version it replaced is in History either way.
+   */
+  const applyComposed = useCallback((composed: ComposedDraft) => {
+    setTitle(composed.title);
+    setDek(composed.dek);
+    setBody(composed.body);
+    setCategory(composed.category);
+    setTab("write");
+  }, []);
+
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
       {/* --- the piece ---------------------------------------------------- */}
@@ -220,6 +311,29 @@ export default function ArticleEditor({
             ← My pieces
           </Link>
           <StatusPill status={article.status} />
+
+          {/* The piece's one outward move, at the top of the piece. It used to
+              sit in the rail, which on a narrow window is a scroll away from
+              the thing it acts on. */}
+          {canEdit && (
+            <button
+              type="submit"
+              formAction={submitAction}
+              disabled={saving || submitting}
+              onClick={(event) => {
+                if (
+                  !window.confirm(
+                    "Send this to the desk? You won't be able to edit it while it's in review.",
+                  )
+                ) {
+                  event.preventDefault();
+                }
+              }}
+              className={`${BUTTON_PRIMARY} ml-auto !px-5 !py-2.5 !text-[10px]`}
+            >
+              {submitting ? "Sending…" : "Submit for review"}
+            </button>
+          )}
         </div>
 
         {!canEdit && (
@@ -330,6 +444,76 @@ export default function ArticleEditor({
           </div>
         )}
 
+        <div className="mt-10">
+          <span className={LABEL}>Topics</span>
+          <p className="mb-4 max-w-[60ch] font-garamond text-[16px] opacity-55">
+            What the piece is about, across the perspectives. Each one is a page
+            readers can arrive on. Up to {MAX_TOPICS}.
+          </p>
+
+          {/* The form posts one entry per topic, which is what the action reads
+              back with getAll — the chips below are buttons, not inputs. */}
+          {topics.map((slug) => (
+            <input key={slug} type="hidden" name="topics" value={slug} />
+          ))}
+
+          <ul className="flex flex-wrap gap-2">
+            {TOPICS.map((topic) => {
+              const on = topics.includes(topic.slug);
+              const full = topics.length >= MAX_TOPICS && !on;
+              return (
+                <li key={topic.slug}>
+                  <button
+                    type="button"
+                    aria-pressed={on}
+                    disabled={!canEdit || full}
+                    onClick={() => toggleTopic(topic.slug)}
+                    className="pixel-corner-sm px-3 py-2 font-arial text-[9px] font-bold tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-25"
+                    style={
+                      on
+                        ? { backgroundColor: topic.hue, color: "var(--ink)" }
+                        : { backgroundColor: "rgba(255,255,255,0.07)" }
+                    }
+                  >
+                    {topic.name}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {canEdit && (
+            <div className="mt-5">
+              <button
+                type="button"
+                onClick={() => void draftSeo()}
+                disabled={seoPending}
+                className={`${BUTTON_GHOST} !px-5 !py-2.5 !text-[10px]`}
+              >
+                {seoPending ? "Reading the piece…" : "Tag it from the piece"}
+              </button>
+              <p className="mt-2 max-w-[52ch] font-arial text-[9px] tracking-[0.16em] uppercase opacity-35">
+                Picks the topics, and fills the search title, description and
+                image description where you&rsquo;ve left them empty
+              </p>
+            </div>
+          )}
+
+          {seoError && (
+            <p className={`${ERROR_BOX} mt-4`} role="alert">
+              {seoError}
+            </p>
+          )}
+        </div>
+
+        <CoverField
+          articleId={article.id}
+          initialUrl={article.coverImageUrl}
+          alt={coverAlt}
+          onAltChange={setCoverAlt}
+          canEdit={canEdit}
+        />
+
         <button
           type="button"
           onClick={() => setShowSeo((v) => !v)}
@@ -344,6 +528,7 @@ export default function ArticleEditor({
               How the piece reads on Google and when the link is shared. Leave
               these empty and the title and standfirst are used.
             </p>
+
             <div>
               <label className={LABEL} htmlFor="seoTitle">
                 Search title
@@ -404,6 +589,7 @@ export default function ArticleEditor({
             initial={companion}
             configured={companionConfigured}
             getDraft={getDraft}
+            onCompose={applyComposed}
           />
         </div>
 
@@ -437,25 +623,6 @@ export default function ArticleEditor({
               className={BUTTON_GHOST}
             >
               {saving ? "Saving…" : "Save draft"}
-            </button>
-
-            <button
-              type="submit"
-              form="editor"
-              formAction={submitAction}
-              disabled={saving || submitting}
-              onClick={(event) => {
-                if (
-                  !window.confirm(
-                    "Send this to the desk? You won't be able to edit it while it's in review.",
-                  )
-                ) {
-                  event.preventDefault();
-                }
-              }}
-              className={BUTTON_PRIMARY}
-            >
-              {submitting ? "Sending…" : "Send to the desk"}
             </button>
 
             <p className="font-arial text-[9px] tracking-[0.16em] uppercase opacity-35">

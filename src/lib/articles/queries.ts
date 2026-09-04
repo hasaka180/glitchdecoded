@@ -109,6 +109,47 @@ export async function slugExists(
   return res.rows.some((row) => row.$id !== exceptId);
 }
 
+/**
+ * Everything published under one topic, newest first.
+ *
+ * `contains` on an array column, which Appwrite cannot index — see the note in
+ * the setup script. At this volume that is a scan of the published rows and
+ * costs nothing worth optimising.
+ */
+export async function listByTopic(
+  topic: string,
+  limit = 60,
+): Promise<ArticleRow[]> {
+  const res = await db().listRows<ArticleRow>({
+    databaseId: DATABASE_ID,
+    tableId: TABLES.articles,
+    queries: [
+      Query.equal("status", "published"),
+      Query.contains("topics", [topic]),
+      Query.orderDesc("publishedAt"),
+      Query.limit(limit),
+    ],
+  });
+  return res.rows;
+}
+
+/** How many published pieces sit under each topic, for the index page. */
+export async function countByTopic(): Promise<Record<string, number>> {
+  const res = await db().listRows<ArticleRow>({
+    databaseId: DATABASE_ID,
+    tableId: TABLES.articles,
+    queries: [Query.equal("status", "published"), Query.limit(500)],
+  });
+
+  const counts: Record<string, number> = {};
+  for (const row of res.rows) {
+    for (const topic of row.topics ?? []) {
+      counts[topic] = (counts[topic] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
 export async function listPublished(limit = 24): Promise<ArticleRow[]> {
   const res = await db().listRows<ArticleRow>({
     databaseId: DATABASE_ID,

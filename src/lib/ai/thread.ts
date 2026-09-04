@@ -6,6 +6,7 @@ import { DATABASE_ID, TABLES } from "@/lib/appwrite/config";
 import { createAdminClient } from "@/lib/appwrite/server";
 
 import type { CompanionMessage, CompanionMode } from "./modes";
+export { MAX_ASKS } from "./modes";
 
 /**
  * Conversations with the companion, stored per writer per piece.
@@ -39,8 +40,23 @@ function db() {
   return createAdminClient().tablesDB;
 }
 
-/** How much of a thread is replayed to the model, and shown on the panel. */
+/** How much of a thread the panel shows. Cheap — it never leaves the database. */
 export const THREAD_WINDOW = 40;
+
+/**
+ * How much is replayed to the model on each turn.
+ *
+ * Every turn re-sends the ones before it, so an uncapped thread costs more with
+ * every message in it. Twelve is enough for the companion to remember what it
+ * has already asked, which is all the continuity a conversation this short
+ * needs.
+ */
+export const REPLAY_WINDOW = 12;
+
+/** The write-up reads the whole conversation — it runs once per piece. */
+export const COMPOSE_WINDOW = 80;
+
+
 
 /**
  * The tail of a thread, oldest first.
@@ -64,6 +80,29 @@ export async function listThread(
     ],
   });
   return res.rows.reverse();
+}
+
+/**
+ * How many turns the writer has spent on this thread.
+ *
+ * Reads Appwrite's `total` off a one-row page rather than pulling the messages:
+ * the count is all the route needs to decide whether to answer.
+ */
+export async function countAsks(
+  userId: string,
+  articleId: string | null,
+): Promise<number> {
+  const res = await db().listRows<CompanionRow>({
+    databaseId: DATABASE_ID,
+    tableId: TABLES.companion,
+    queries: [
+      Query.equal("userId", userId),
+      Query.equal("articleId", threadKey(articleId)),
+      Query.equal("role", "user"),
+      Query.limit(1),
+    ],
+  });
+  return res.total;
 }
 
 export async function appendMessage(input: {

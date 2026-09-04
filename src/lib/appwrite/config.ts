@@ -39,6 +39,21 @@ export const TABLES = {
 
 export const BUCKET_ID = "article-images";
 
+/** What a cover may weigh and be, matching the bucket the setup script makes. */
+export const COVER_MAX_BYTES = 8 * 1024 * 1024;
+export const COVER_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+
+/**
+ * The public URL of a stored file.
+ *
+ * Built rather than fetched: the Node SDK's `getFileView` returns the bytes,
+ * and what a page needs is a src. The bucket is world-readable, so this URL
+ * works for a signed-out reader — which is the point of a cover image.
+ */
+export function fileViewUrl(fileId: string): string {
+  return `${APPWRITE_ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${fileId}/view?project=${APPWRITE_PROJECT_ID}`;
+}
+
 /**
  * Appwrite user label that grants review powers. Labels are writable only by a
  * server SDK holding the project API key, so a user cannot grant it to

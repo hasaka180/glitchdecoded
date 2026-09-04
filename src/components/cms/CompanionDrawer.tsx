@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import Companion from "@/components/cms/Companion";
+import type { ComposedDraft } from "@/lib/ai/compose";
 import type { CompanionMessage } from "@/lib/ai/modes";
 
 /**
@@ -18,6 +19,7 @@ export default function CompanionDrawer({
   initial,
   configured,
   getDraft,
+  onCompose,
 }: {
   articleId: string;
   initial: CompanionMessage[];
@@ -28,6 +30,7 @@ export default function CompanionDrawer({
     body: string;
     category: string;
   };
+  onCompose: (draft: ComposedDraft) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -83,6 +86,7 @@ export default function CompanionDrawer({
           initial={initial}
           configured={configured}
           getDraft={getDraft}
+          onCompose={onCompose}
           className="flex-1"
         />
       </div>

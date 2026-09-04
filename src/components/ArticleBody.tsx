@@ -51,7 +51,14 @@ export default function ArticleBody({ article }: { article: ArticleView }) {
         // An Appwrite Storage URL on whatever endpoint the project is on, which
         // next/image would need configured as a remote host.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={article.coverImageUrl} alt="" className="mt-10 block w-full" loading="lazy" />
+        <img
+          src={article.coverImageUrl}
+          // Empty is the correct value for an undescribed decorative image —
+          // a screen reader skips it rather than reading out a filename.
+          alt={article.coverAlt}
+          className="mt-10 block w-full"
+          loading="lazy"
+        />
       )}
 
       {article.body ? (

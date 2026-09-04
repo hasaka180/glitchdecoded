@@ -16,6 +16,17 @@ export type CompanionMode =
   | "unstick"
   | "draft";
 
+/**
+ * How many questions a writer gets per thread before it has to be written up
+ * or cleared.
+ *
+ * A companion whose whole method is to keep asking will keep asking forever,
+ * and every turn costs money. The cap is what turns "an endless interview"
+ * into "an interview" — better for the writing as well as the bill. Shared
+ * with the panel so it can count down rather than surprise anyone.
+ */
+export const MAX_ASKS = 12;
+
 export type QuickAsk = {
   id: CompanionMode;
   /** What the button says. */

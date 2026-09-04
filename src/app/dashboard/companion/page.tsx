@@ -8,6 +8,12 @@ import { companionConfigured } from "@/lib/ai/client";
 import { listThread, toMessage } from "@/lib/ai/thread";
 import { requireUser } from "@/lib/auth/dal";
 
+/**
+ * The write-up is a Server Action on this page, and a Server Action's ceiling
+ * comes from the page it was called on rather than from the action itself.
+ */
+export const maxDuration = 60;
+
 export const metadata: Metadata = {
   title: "The room — The desk",
   robots: { index: false, follow: false },

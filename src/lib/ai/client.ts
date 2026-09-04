@@ -5,21 +5,30 @@ import OpenAI from "openai";
 /**
  * The model behind the companion.
  *
- * Overridable without a code change, because model names move faster than this
- * file will: set OPENAI_MODEL in the environment to pin a different one. The
- * default is a general-purpose flagship rather than a mini or nano tier — the
- * job here is reading a half-finished argument and finding the question that
- * unlocks it, which is the part small models are worst at.
+ * A mini tier by default. The companion's work is asking short, pointed
+ * questions about text it has been handed, which is not what the large models
+ * are for — and it runs dozens of times per piece, so the tier is the single
+ * biggest lever on what this costs. Set OPENAI_MODEL to pin a different one;
+ * `gpt-5.4` is the step up if answers start feeling shallow.
  */
-export const COMPANION_MODEL = process.env.OPENAI_MODEL || "gpt-5.4";
+export const COMPANION_MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 
 /**
- * Reasoning effort is stepped down from the default because this is a chat: the
- * writer is waiting with a cursor blinking at them, and the answers are a few
- * hundred words of questions rather than a long analysis. Raise it if the
- * companion starts feeling shallow.
+ * Reasoning effort. `low` is the cheaper setting and the questions came back
+ * shallow on it, which is the one thing this feature cannot afford to be — a
+ * companion that asks the obvious question is worse than no companion. Both
+ * calls sit at `medium`; the ceilings and the folded context below are where
+ * the saving comes from instead.
  */
 export const COMPANION_EFFORT = "medium" as const;
+export const COMPOSE_EFFORT = "medium" as const;
+
+/**
+ * Output ceilings. The chat one is deliberately tight: the brief already asks
+ * for short turns, and a ceiling is the only thing that actually enforces it.
+ */
+export const CHAT_MAX_TOKENS = 1_200;
+export const COMPOSE_MAX_TOKENS = 8_000;
 
 /** Thrown when the key is missing, so the route can say so in plain words. */
 export class MissingCompanionKey extends Error {

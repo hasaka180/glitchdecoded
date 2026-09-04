@@ -29,6 +29,8 @@ export type ArticleView = {
   categoryName: string;
   hue: string;
   coverImageUrl: string | null;
+  /** What the cover shows. Empty means the image is decorative or undescribed. */
+  coverAlt: string;
   /** Which source answered — the UI says so rather than guessing. */
   source: "published" | "archive";
 };
@@ -50,6 +52,7 @@ export async function getArticleView(slug: string): Promise<ArticleView | null> 
         categoryName: categoryName(row.category),
         hue: categoryHue(row.category),
         coverImageUrl: row.coverImageUrl,
+        coverAlt: row.coverAlt ?? "",
         source: "published",
       };
     }
@@ -73,6 +76,7 @@ export async function getArticleView(slug: string): Promise<ArticleView | null> 
     categoryName: categoryName(placeholder.category),
     hue: categoryHue(placeholder.category),
     coverImageUrl: null,
+    coverAlt: "",
     source: "archive",
   };
 }

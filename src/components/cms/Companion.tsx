@@ -13,9 +13,14 @@ import SubmitButton from "@/components/cms/SubmitButton";
 import { ERROR_BOX } from "@/components/cms/ui";
 import {
   clearCompanionThread,
+  composeDraft,
+  startPieceFromConversation,
   type CompanionState,
+  type ComposeState,
 } from "@/lib/actions/companion";
+import type { ComposedDraft } from "@/lib/ai/compose";
 import {
+  MAX_ASKS,
   QUICK_ASKS,
   type CompanionMessage,
   type CompanionMode,
@@ -49,6 +54,12 @@ type Props = {
    * paragraph is worse than one that admits it cannot see the draft.
    */
   getDraft?: () => DraftSnapshot;
+  /**
+   * Fills the editor's fields with a written-up draft. Only supplied by the
+   * editor's panel; on the blank-page thread the write-up makes a new piece
+   * instead and navigates to it.
+   */
+  onCompose?: (draft: ComposedDraft) => void;
   className?: string;
 };
 
@@ -84,6 +95,7 @@ export default function Companion({
   initial,
   configured,
   getDraft,
+  onCompose,
   className,
 }: Props) {
   const [messages, setMessages] = useState<CompanionMessage[]>(initial);
@@ -97,6 +109,13 @@ export default function Companion({
     clearCompanionThread,
     {},
   );
+
+  // Two ways to end a conversation: fill in the piece already open, or make a
+  // piece out of a thread that never had one.
+  const [composeState, composeAction, composing] = useActionState<
+    ComposeState,
+    FormData
+  >(articleId ? composeDraft : startPieceFromConversation, {});
 
   const abort = useRef<AbortController | null>(null);
   const scroller = useRef<HTMLDivElement | null>(null);
@@ -115,6 +134,28 @@ export default function Companion({
   }, [messages, live]);
 
   useEffect(() => () => abort.current?.abort(), []);
+
+  // The write-up hands back fields rather than saving them, so the editor is
+  // populated here and the writer still decides whether to keep it. Guarded by
+  // identity because the action's state survives re-renders.
+  const applied = useRef<ComposedDraft | null>(null);
+  useEffect(() => {
+    const composed = composeState.draft;
+    if (!composed || applied.current === composed) return;
+
+    applied.current = composed;
+    onCompose?.(composed);
+    follow.current = true;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `written-${Date.now()}`,
+        role: "assistant",
+        body: `**Written up into the editor.**\n\n${composed.note}`,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+  }, [composeState.draft, onCompose]);
 
   const send = useCallback(
     async (text: string, mode: CompanionMode | null) => {
@@ -219,6 +260,12 @@ export default function Companion({
 
   const empty = messages.length === 0 && !live && !streaming;
 
+  // The route enforces this too; here it is so the writer can see it coming
+  // rather than hit a wall mid-thought.
+  const asked = messages.filter((message) => message.role === "user").length;
+  const spent = asked >= MAX_ASKS;
+  const closed = spent || !configured;
+
   return (
     <div className={`flex min-h-0 flex-col ${className ?? ""}`}>
       {/* --- the thread --------------------------------------------------- */}
@@ -273,6 +320,14 @@ export default function Companion({
           </p>
         )}
 
+        {spent && (
+          <p className="pixel-corner-sm mb-4 bg-[color:var(--cyan)]/12 px-4 py-3 font-garamond text-[15px] leading-[1.5] ring-1 ring-[color:var(--cyan)]/30">
+            That&rsquo;s {MAX_ASKS} questions — as far as one conversation
+            usefully goes. End it and it becomes the piece, or clear the thread
+            and start again.
+          </p>
+        )}
+
         {!configured && (
           <p className="pixel-corner-sm mb-4 bg-white/[0.06] px-4 py-3 font-garamond text-[15px] leading-[1.5] opacity-75">
             The companion isn&rsquo;t switched on for this site yet. Add
@@ -283,12 +338,60 @@ export default function Companion({
           </p>
         )}
 
+        {/* The way out. Without it the companion asks questions forever, which
+            is the right instinct for a conversation and the wrong one for a
+            magazine with a deadline. */}
+        {messages.length > 0 && (
+          <div className="mb-4">
+            <button
+              type="button"
+              disabled={composing || streaming || !configured}
+              onClick={() => {
+                const current = getDraft?.();
+                if (
+                  articleId &&
+                  current?.body.trim() &&
+                  !window.confirm(
+                    "Replace what's in the editor with the written-up draft? The current text is saved to History first, so you can put it back.",
+                  )
+                ) {
+                  return;
+                }
+
+                const payload = new FormData();
+                if (articleId) {
+                  payload.set("articleId", articleId);
+                  if (current) {
+                    payload.set("title", current.title);
+                    payload.set("dek", current.dek);
+                    payload.set("body", current.body);
+                    payload.set("category", current.category);
+                  }
+                }
+                composeAction(payload);
+              }}
+              className="pixel-corner-sm w-full bg-[color:var(--bone)] px-5 py-3 font-arial text-[10px] font-bold tracking-[0.18em] text-[color:var(--ink)] uppercase transition-colors hover:bg-[color:var(--cyan)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {composing
+                ? "Writing it up…"
+                : articleId
+                  ? "End the conversation"
+                  : "End it and start a piece"}
+            </button>
+            <p className="mt-2 text-center font-arial text-[9px] tracking-[0.14em] uppercase opacity-30">
+              {articleId
+                ? "Fills in the title, standfirst, perspective and body"
+                : "Makes a draft and opens it in the editor"}
+            </p>
+          </div>
+        )}
+
         <div className="mb-3 flex flex-wrap gap-2">
           {QUICK_ASKS.map((quick) => (
             <button
               key={quick.id}
               type="button"
-              disabled={streaming || !configured}
+              disabled={streaming || closed}
               onClick={() => void send(quick.ask, quick.id)}
               className="pixel-corner-sm bg-white/[0.07] px-3 py-2 font-arial text-[9px] font-bold tracking-[0.14em] uppercase transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-30"
             >
@@ -309,10 +412,14 @@ export default function Companion({
                 void send(input, null);
               }
             }}
-            disabled={!configured}
+            disabled={closed}
             rows={2}
             maxLength={6000}
-            placeholder="Say it badly. That's what this is for."
+            placeholder={
+              spent
+                ? "That's the last of the questions."
+                : "Say it badly. That's what this is for."
+            }
             className="min-w-0 flex-1 resize-y bg-white/[0.04] px-4 py-3 font-garamond text-[16px] text-[color:var(--bone)] outline-none ring-1 ring-white/15 transition-[box-shadow,background-color] placeholder:opacity-35 focus:bg-white/[0.07] focus:ring-2 focus:ring-[color:var(--cyan)] disabled:opacity-50"
           />
 
@@ -328,7 +435,7 @@ export default function Companion({
             <button
               type="button"
               onClick={() => void send(input, null)}
-              disabled={!input.trim() || !configured}
+              disabled={!input.trim() || closed}
               className="pixel-corner-sm shrink-0 bg-[color:var(--bone)] px-5 py-3 font-arial text-[10px] font-bold tracking-[0.16em] text-[color:var(--ink)] uppercase transition-colors hover:bg-[color:var(--cyan)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Send
@@ -338,7 +445,9 @@ export default function Companion({
 
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
           <p className="font-arial text-[9px] tracking-[0.14em] uppercase opacity-30">
-            Enter sends · Shift+Enter for a new line
+            {spent
+              ? "No questions left on this thread"
+              : `Enter sends · ${MAX_ASKS - asked} of ${MAX_ASKS} questions left`}
           </p>
 
           {messages.length > 0 && (
@@ -362,9 +471,9 @@ export default function Companion({
           )}
         </div>
 
-        {clearState.error && (
+        {(clearState.error ?? composeState.error) && (
           <p className={`${ERROR_BOX} mt-4`} role="alert">
-            {clearState.error}
+            {clearState.error ?? composeState.error}
           </p>
         )}
       </div>

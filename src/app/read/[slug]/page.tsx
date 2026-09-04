@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import ArticleBody from "@/components/ArticleBody";
-import { getArticleView } from "@/lib/article-view";
+import { getArticleView, type ArticleView } from "@/lib/article-view";
 import { getPublishedBySlug, listPublished } from "@/lib/articles/queries";
 import { categoryName } from "@/lib/categories";
 
@@ -46,20 +46,36 @@ export async function generateMetadata({
     article.dek ||
     truncate(plainText(article.body), 155);
 
+  // An uploaded cover is a photograph of the thing the piece is about, which
+  // beats the generated card. With none, `opengraph-image.tsx` still applies —
+  // Next attaches it automatically when `images` is left unset.
+  const images = article.coverImageUrl
+    ? [
+        // No width and height: the upload is whatever ratio the writer chose,
+        // and declaring 1200x630 over a portrait photograph makes the preview
+        // wrong in a way the crawler would otherwise have got right itself.
+        { url: article.coverImageUrl, alt: article.coverAlt || title },
+      ]
+    : undefined;
+
   return {
     title,
     description,
+    authors: [{ name: article.authorName }],
     alternates: { canonical: `/read/${article.slug}` },
+    robots: { index: true, follow: true },
     openGraph: {
       type: "article",
       title,
       description,
       url: `/read/${article.slug}`,
       publishedTime: article.publishedAt ?? undefined,
+      modifiedTime: article.$updatedAt,
       authors: [article.authorName],
       section: categoryName(article.category),
+      images,
     },
-    twitter: { card: "summary_large_image", title, description },
+    twitter: { card: "summary_large_image", title, description, images },
   };
 }
 
@@ -75,6 +91,38 @@ export async function generateStaticParams() {
   }
 }
 
+/**
+ * Structured data, so a search engine reads the piece as an article rather
+ * than as a page with words on it — this is what puts the byline and the date
+ * in a result, and makes the piece eligible for a rich snippet.
+ *
+ * `JSON.stringify` escapes quotes but not `</script>`, and titles here are
+ * written by anyone who signs up, so `<` is escaped before it can close the
+ * tag it sits inside.
+ */
+function articleJsonLd(article: ArticleView, description: string) {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description,
+    ...(article.coverImageUrl ? { image: [article.coverImageUrl] } : {}),
+    ...(article.date ? { datePublished: article.date } : {}),
+    author: { "@type": "Person", name: article.author },
+    publisher: { "@type": "Organization", name: "Glitch Decoded" },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `/read/${article.slug}`,
+    },
+    articleSection: article.categoryName,
+    wordCount: article.body
+      ? article.body.trim().split(/\s+/).filter(Boolean).length
+      : undefined,
+  };
+
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
 export default async function ReadPage({ params }: PageProps<"/read/[slug]">) {
   const { slug } = await params;
   // Resolved through the shared view so a hard load of a shared modal URL finds
@@ -84,8 +132,17 @@ export default async function ReadPage({ params }: PageProps<"/read/[slug]">) {
   if (!article) notFound();
 
 
+  const description =
+    article.dek || (article.body ? truncate(plainText(article.body), 155) : "");
+
   return (
     <main className="paper flex-1 pt-28 pb-24 text-[color:var(--ink-brown)] sm:pt-36">
+      <script
+        type="application/ld+json"
+        // Escaped above; the only thing this ever contains is that JSON.
+        dangerouslySetInnerHTML={{ __html: articleJsonLd(article, description) }}
+      />
+
       <div className="mx-auto w-full max-w-[46rem] px-5 sm:px-10">
         <ArticleBody article={article} />
 

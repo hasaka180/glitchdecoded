@@ -2,6 +2,7 @@ import { APIError } from "openai";
 import type OpenAI from "openai";
 
 import {
+  CHAT_MAX_TOKENS,
   COMPANION_EFFORT,
   COMPANION_MODEL,
   companionClient,
@@ -13,7 +14,13 @@ import {
   type DraftContext,
 } from "@/lib/ai/companion";
 import { isCompanionMode, type CompanionMode } from "@/lib/ai/modes";
-import { appendMessage, listThread } from "@/lib/ai/thread";
+import {
+  appendMessage,
+  countAsks,
+  listThread,
+  MAX_ASKS,
+  REPLAY_WINDOW,
+} from "@/lib/ai/thread";
 import { getArticleById } from "@/lib/articles/queries";
 import { getCurrentUser, ownsArticle } from "@/lib/auth/dal";
 
@@ -29,6 +36,14 @@ import { getCurrentUser, ownsArticle } from "@/lib/auth/dal";
  * turn is stored. Plain text would be simpler, but there would be nowhere to
  * put an error that only surfaces after the first paragraph has been sent.
  */
+
+/**
+ * A streamed answer from a reasoning model can be thinking for a while before
+ * the first token arrives, which is longer than a serverless function's default
+ * ceiling. 60s is the most a Vercel Hobby function may run; raise it on a plan
+ * that allows more if long answers start getting cut off mid-sentence.
+ */
+export const maxDuration = 60;
 
 /** Longest turn a writer can send. Generous — people paste paragraphs here. */
 const MAX_MESSAGE = 6_000;
@@ -138,7 +153,16 @@ export async function POST(request: Request) {
     };
   }
 
-  const history = await listThread(user.id, articleId);
+  // The cap is enforced here rather than only in the panel: the route is
+  // reachable by direct POST, and it is the thing that spends money.
+  if ((await countAsks(user.id, articleId)) >= MAX_ASKS) {
+    return fail(
+      `That's ${MAX_ASKS} questions — as far as this conversation usefully goes. Write it up, or clear the thread and start again.`,
+      429,
+    );
+  }
+
+  const history = await listThread(user.id, articleId, REPLAY_WINDOW);
 
   // The brief first and the draft second, both as `developer` turns: they are
   // instructions from the site, not from the writer, and the split keeps the
@@ -146,6 +170,7 @@ export async function POST(request: Request) {
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = systemPrompts(
     user.name,
     draft,
+    "chat",
   ).map((content) => ({ role: "developer", content }));
 
   const opening = messages.length;
@@ -175,7 +200,7 @@ export async function POST(request: Request) {
   const stream = await companionClient().chat.completions.create(
     {
       model: COMPANION_MODEL,
-      max_completion_tokens: 8_000,
+      max_completion_tokens: CHAT_MAX_TOKENS,
       reasoning_effort: COMPANION_EFFORT,
       messages,
       stream: true,

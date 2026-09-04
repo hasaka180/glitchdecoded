@@ -75,6 +75,12 @@ const str = (key, size, required = false, xdefault) => ({
   kind: "string",
   args: { key, size, required, xdefault },
 });
+// A repeated value rather than a comma-joined string, so Appwrite can index it
+// and answer "every piece tagged grief" without scanning the table.
+const strArray = (key, size) => ({
+  kind: "string",
+  args: { key, size, required: false, array: true },
+});
 const longtext = (key, required = false) => ({
   kind: "longtext",
   args: { key, required },
@@ -138,6 +144,12 @@ const SCHEMA = [
       str("coverImageUrl", 2000),
       enumCol("coverSource", ["upload", "ai"], false),
       str("coverPrompt", 1000),
+      // What the image shows, for a reader who cannot see it and for the
+      // search engines that read it as a description of the picture.
+      str("coverAlt", 300),
+      // The twenty topics from src/lib/topics.ts. A piece runs under one
+      // perspective and is about as many of these as it is about.
+      strArray("topics", 40),
       int("minutes", { min: 0, max: 600, xdefault: 1 }),
       int("views", { min: 0, xdefault: 0 }),
       int("likes", { min: 0, xdefault: 0 }),
@@ -173,6 +185,9 @@ const SCHEMA = [
         type: TablesDBIndexType.Key,
         columns: ["status", "views"],
       },
+      // No index on `topics`: Appwrite refuses one on an array column. The
+      // topic pages filter with Query.contains, which is a scan — fine at a
+      // magazine's volume, and the thing to revisit if it ever isn't.
       // Full-text so the dashboard can search by title.
       {
         key: "title_search",
