@@ -43,6 +43,14 @@ export default async function DashboardLayout({
             </Link>
             {user.isSuperadmin && (
               <Link
+                href="/dashboard/notes"
+                className="font-arial text-[10px] font-bold tracking-[0.18em] uppercase opacity-60 transition-opacity hover:opacity-100"
+              >
+                Notes
+              </Link>
+            )}
+            {user.isSuperadmin && (
+              <Link
                 href="/dashboard/reels"
                 className="font-arial text-[10px] font-bold tracking-[0.18em] uppercase opacity-60 transition-opacity hover:opacity-100"
               >

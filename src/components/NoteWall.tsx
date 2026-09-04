@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+import { SEED, type Note } from "@/lib/notes/seed";
+
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
 /**
@@ -16,25 +18,7 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
  * There is no server behind this — a note the reader pins is kept in their own
  * browser, and the copy says so rather than implying it was posted anywhere.
  */
-type Note = {
-  id: string;
-  /** The note itself, in the second person, the way people write to themselves. */
-  text: string;
-  /** How it was signed. Initials, a first name, a time — whatever was given. */
-  sign: string;
-  /** Written by this reader, on this device. */
-  mine?: boolean;
-};
 
-const SEED: Note[] = [
-  { id: "s1", text: "Stop rehearsing conversations that are never going to happen.", sign: "M.K. · Lisbon" },
-  { id: "s2", text: "The thing you keep postponing is the thing.", sign: "anon · 03:14" },
-  { id: "s3", text: "You are allowed to change your mind in public.", sign: "R. · Colombo" },
-  { id: "s4", text: "Call your father. Not on his birthday.", sign: "T.A. · Leeds" },
-  { id: "s5", text: "Busy is not the same as useful. Check which one today was.", sign: "J." },
-  { id: "s6", text: "Nobody is thinking about it as much as you are.", sign: "anon" },
-  { id: "s7", text: "Leave the phone in the other room. That is the whole plan.", sign: "D.V. · Berlin" },
-];
 
 const KEY = "glitch:notes-to-self";
 const LIMIT = 140;
@@ -155,7 +139,8 @@ type Props = {
    * The section's own heading. Off where a masthead already carries it, so the
    * notes page does not print "note to self" twice.
    */
-  heading?: boolean;
+  heading?: boolean;  /** The magazine's own notes, from the desk. */
+  seed?: Note[];
 };
 
 export default function NoteWall({
@@ -163,6 +148,9 @@ export default function NoteWall({
   reveal = 1,
   layout = "rail",
   heading = true,
+  // The desk's board when there is one. Defaults to the file so the component
+  // still renders on its own — in a test, or anywhere it is dropped in.
+  seed = SEED,
 }: Props) {
   const grid = layout === "grid";
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -280,7 +268,7 @@ export default function NoteWall({
   }, [text, sign]);
 
   // The rail is a fixed ring so its arithmetic holds; the grid shows the lot.
-  const notes = grid ? [...mine, ...SEED] : [...mine, ...SEED].slice(0, RING);
+  const notes = grid ? [...mine, ...seed] : [...mine, ...seed].slice(0, RING);
   /** A second lap of the same notes, so the rail can turn without a seam. */
   const track = [...notes, ...notes];
 

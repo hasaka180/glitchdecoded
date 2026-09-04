@@ -4,6 +4,10 @@ import Footer from "@/components/Footer";
 import NoteWall from "@/components/NoteWall";
 import PageMasthead from "@/components/PageMasthead";
 import PaperTear from "@/components/PaperTear";
+import { listNotes } from "@/lib/notes/queries";
+
+/** Edited at the desk now, so it refreshes rather than freezing at build. */
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Notes — Glitch Decoded",
@@ -11,7 +15,9 @@ export const metadata: Metadata = {
     "The board. Pin the thing you do not want to lose to the scroll — it stays in your browser and goes nowhere else.",
 };
 
-export default function NotesPage() {
+export default async function NotesPage() {
+  const notes = await listNotes();
+
   return (
     <>
       <main className="flex-1">
@@ -30,7 +36,7 @@ export default function NotesPage() {
             section is printed on. */}
         <PaperTear sheet="var(--ink)" ground="var(--paper)" />
 
-        <NoteWall layout="grid" heading={false} />
+        <NoteWall layout="grid" heading={false} seed={notes} />
       </main>
 
       <Footer sheet="var(--paper)" />

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import type { Note } from "@/lib/notes/seed";
+
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
 import NoteWall from "./NoteWall";
@@ -65,7 +67,7 @@ const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
  * natural height, the horizontal PaperTear does the transition, and the board
  * follows.
  */
-export default function NoteRip() {
+export default function NoteRip({ seed }: { seed: Note[] }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const reduced = useReducedMotion();
   const [progress, setProgress] = useState(0);
@@ -103,7 +105,7 @@ export default function NoteRip() {
       <>
         <ScreeningRoom />
         <PaperTear sheet="var(--graphite)" ground="var(--paper)" />
-        <NoteWall />
+        <NoteWall seed={seed} />
       </>
     );
   }
@@ -120,7 +122,7 @@ export default function NoteRip() {
     <div ref={ref} className="relative h-[440vh]">
       <div className="sticky top-0 h-[100lvh] overflow-hidden bg-[color:var(--ink)]">
         <div className="absolute inset-0">
-          <NoteWall inStage reveal={reveal} />
+          <NoteWall inStage reveal={reveal} seed={seed} />
         </div>
 
         <div

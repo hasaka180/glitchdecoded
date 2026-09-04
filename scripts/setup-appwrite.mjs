@@ -273,6 +273,22 @@ const SCHEMA = [
     ],
   },
   {
+    id: "notes",
+    name: "Notes to self",
+    columns: [
+      // The note, in the second person. A reader's own notes never come here —
+      // those stay in their browser and are nobody else's business.
+      str("text", 300, true),
+      str("sign", 120),
+      // Explicit running order, as with the reels: a note written later often
+      // belongs in the middle of the board.
+      int("position", { min: 0, max: 999, xdefault: 0 }),
+    ],
+    indexes: [
+      { key: "by_position", type: TablesDBIndexType.Key, columns: ["position"] },
+    ],
+  },
+  {
     id: "reels",
     name: "Video library",
     columns: [

@@ -36,6 +36,7 @@ export const TABLES = {
   views: "article_views",
   companion: "companion_messages",
   reels: "reels",
+  notes: "notes",
 } as const;
 
 export const BUCKET_ID = "article-images";
