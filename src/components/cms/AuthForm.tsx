@@ -116,7 +116,9 @@ export default function AuthForm({ mode, action, next }: Props) {
       <p className="mt-8 font-garamond text-[16px] opacity-60">
         {isSignUp ? "Already have an account? " : "No account yet? "}
         <Link
-          href={isSignUp ? "/login" : "/signup"}
+          // Carried across the swap, so somebody sent here from a gated page
+          // still lands where they were headed after taking the other door.
+          href={`${isSignUp ? "/login" : "/signup"}?next=${encodeURIComponent(next)}`}
           className="underline decoration-[color:var(--cyan)] underline-offset-4 transition-colors hover:text-[color:var(--cyan)]"
         >
           {isSignUp ? "Sign in" : "Create one"}

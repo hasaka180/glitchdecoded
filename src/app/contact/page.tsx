@@ -5,6 +5,7 @@ import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
 import PageMasthead from "@/components/PageMasthead";
 import PaperTear from "@/components/PaperTear";
+import SocialLinks from "@/components/SocialLinks";
 
 export const metadata: Metadata = {
   title: "Contact us — Glitch Decoded",
@@ -93,12 +94,32 @@ export default function ContactPage() {
                   </dl>
                 </div>
 
+                {/* Where the post would go, if anybody sent any. */}
+                <div className="mt-6 border border-[color:var(--ink-brown)]/20 bg-white/50 p-6 sm:p-7">
+                  <p className="font-arial text-[10px] font-bold tracking-[0.26em] uppercase opacity-55">
+                    Where we are
+                  </p>
+                  <address className="mt-4 font-garamond text-[17px] leading-[1.5] not-italic opacity-85">
+                    Dubai, United Arab Emirates
+                  </address>
+                  <p className="mt-1.5 font-garamond text-[15px] leading-[1.45] opacity-55">
+                    Written from GMT+4, which is why a reply sometimes lands
+                    while your part of the world is asleep.
+                  </p>
+
+                  <p className="mt-6 font-arial text-[10px] font-bold tracking-[0.26em] uppercase opacity-55">
+                    Elsewhere
+                  </p>
+                  <SocialLinks className="mt-4" />
+                </div>
+
                 <div className="mt-6 border-l-2 border-[color:var(--script-red)] pl-4">
                   <p className="font-garamond text-[16px] leading-[1.55] opacity-70">
-                    Pitching a piece rather than writing to us? That has its own
-                    form, with the questions we would otherwise have to ask you:{" "}
+                    Pitching a piece rather than writing to us? That one goes
+                    through an account, so the draft stays yours while you work
+                    on it:{" "}
                     <Link href="/submit" className="underline underline-offset-4">
-                      submit a glitch
+                      sign in and submit a glitch
                     </Link>
                     .
                   </p>

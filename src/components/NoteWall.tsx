@@ -206,11 +206,26 @@ export default function NoteWall({
 
   // Autoplay. Held while the reader is on the rail or writing, and off
   // entirely under reduced motion, where the rail scrolls by hand instead.
+  //
+  // Driven off requestAnimationFrame against a wall clock rather than
+  // setInterval: iOS Safari throttles timers during momentum scrolling and in
+  // Low Power Mode, and suspends them outright while the tab is in the
+  // background — a rail on setInterval comes back from that either stalled or
+  // owing a burst of missed steps. Measuring elapsed time means a stall costs
+  // one step, not a queue of them, and rAF stops and restarts with the page.
   const paused = held || open || reduced || grid;
   useEffect(() => {
     if (paused) return;
-    const id = setInterval(() => setStep((n) => n + 1), DWELL);
-    return () => clearInterval(id);
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      if (now - last < DWELL) return;
+      last = now;
+      setStep((n) => n + 1);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [paused]);
 
   // One card past the ring is the same card the rail started on, so once the
@@ -399,8 +414,16 @@ export default function NoteWall({
              gap, or that arithmetic stops holding. */
           <div
             className="note-rail relative mx-auto -my-3 w-full max-w-[1200px] overflow-hidden px-2.5 py-3 sm:px-7"
-            onMouseEnter={() => setHeld(true)}
-            onMouseLeave={() => setHeld(false)}
+            // Pointer events rather than mouse ones, and never a hold from a
+            // touch: iOS Safari answers a tap with a synthetic mouseenter and
+            // then never sends the matching mouseleave, so a mouse-driven hold
+            // would stop the rail on first contact and never let it go. A
+            // leave of any kind still releases, so a hybrid device that
+            // switched pointers mid-hover cannot latch either.
+            onPointerEnter={(e) => {
+              if (e.pointerType !== "touch") setHeld(true);
+            }}
+            onPointerLeave={() => setHeld(false)}
             onFocusCapture={() => setHeld(true)}
             onBlurCapture={() => setHeld(false)}
           >

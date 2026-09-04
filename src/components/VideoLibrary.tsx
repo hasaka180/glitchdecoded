@@ -61,7 +61,7 @@ function Tube() {
 function TitleCard({ reel, index }: { reel: Reel; index: number }) {
   return (
     <div
-      className="crt-flicker absolute inset-0 flex flex-col justify-between p-6 sm:p-9"
+      className="crt-flicker absolute inset-0 flex flex-col justify-between p-4 sm:p-9"
       style={{
         backgroundImage: `radial-gradient(90% 70% at 50% 40%, ${reel.hue}22, transparent 70%), linear-gradient(160deg, #16130e, #05040a)`,
       }}
@@ -80,12 +80,15 @@ function TitleCard({ reel, index }: { reel: Reel; index: number }) {
 
       <div>
         <p
-          className="font-pixel text-[clamp(1.3rem,3.4vw,2.3rem)] leading-[1.1] uppercase"
+          className="font-pixel text-[clamp(1.05rem,3.4vw,2.3rem)] leading-[1.1] uppercase"
           style={{ color: reel.hue }}
         >
           {reel.speaker}
         </p>
-        <p className="mt-4 max-w-[42ch] font-garamond text-[16px] leading-[1.5] opacity-75 sm:text-[18px]">
+        {/* Clamped rather than left to wrap: the card is pinned to the tube's
+            box, so a long line has nowhere to go and would run under the row
+            below it. Three lines is what the frame holds on a phone. */}
+        <p className="reel-line mt-2 max-w-[42ch] font-garamond text-[13px] leading-[1.4] opacity-75 sm:mt-4 sm:text-[18px] sm:leading-[1.5]">
           {reel.line}
         </p>
       </div>
@@ -120,12 +123,18 @@ export default function VideoLibrary() {
     <div>
       <div className="grid gap-6 lg:grid-cols-[7fr_5fr] lg:gap-8">
       {/* The set: cabinet, perforated edges, picture. */}
-      <div className="pixel-corner relative bg-black p-3 text-[color:var(--bone)] sm:p-4">
-        <span aria-hidden className="sprockets absolute inset-y-4 left-[6px] w-[6px] opacity-40" />
-        <span aria-hidden className="sprockets absolute inset-y-4 right-[6px] w-[6px] opacity-40" />
+      {/* The cabinet's chrome is fixed furniture, so on a phone it is the
+          picture that pays for it — 44px of a 390px screen went on padding,
+          sprockets and inset. Halved below sm, which buys the tube most of the
+          screen width back. */}
+      <div className="pixel-corner relative bg-black p-1.5 text-[color:var(--bone)] sm:p-4">
+        <span aria-hidden className="sprockets absolute inset-y-3 left-[3px] w-[4px] opacity-40 sm:inset-y-4 sm:left-[6px] sm:w-[6px]" />
+        <span aria-hidden className="sprockets absolute inset-y-3 right-[3px] w-[4px] opacity-40 sm:inset-y-4 sm:right-[6px] sm:w-[6px]" />
 
-        <div className="relative mx-[10px] overflow-hidden rounded-[10px] bg-black">
-          <div className="relative aspect-[16/10] w-full">
+        <div className="relative mx-[7px] overflow-hidden rounded-[10px] bg-black sm:mx-[10px]">
+          {/* 16/9 is what the reels actually are, so a player fills the frame
+              instead of sitting letterboxed inside a 16/10 one. */}
+          <div className="relative aspect-video w-full">
             {playing && id ? (
               <iframe
                 key={reel.id}
@@ -158,32 +167,39 @@ export default function VideoLibrary() {
                       <span aria-hidden>▶</span>
                     </span>
                   </button>
-                ) : (
-                  <p className="absolute inset-x-0 bottom-0 bg-black/70 px-5 py-3 text-center font-mono text-[10px] tracking-[0.22em] uppercase opacity-70">
-                    Not transferred yet
-                  </p>
-                )}
+                ) : null}
               </>
             )}
           </div>
         </div>
 
         {/* the strip under the picture */}
-        <div className="mt-3 flex items-center justify-between gap-4 px-[10px] pb-1">
-          <p className="font-mono text-[10px] tracking-[0.22em] uppercase opacity-55">
+        <div className="mt-2 flex items-center justify-between gap-3 px-[7px] pb-1 sm:mt-3 sm:gap-4 sm:px-[10px]">
+          {/* Truncates rather than wraps: the strip is one line of furniture
+              under the picture, and the card above already prints the full
+              credit. */}
+          <p className="min-w-0 truncate font-mono text-[9px] tracking-[0.18em] uppercase opacity-55 sm:text-[10px] sm:tracking-[0.22em]">
             {reel.source} · {reel.year}
             {reel.runtime && ` · ${reel.runtime}`}
           </p>
 
-          {id && (
+          {/* The transfer's state sits in the strip rather than over the
+              picture: the card fills the tube at every width, so a notice
+              inside it lands on the copy. The screening room says it here
+              too. */}
+          {id ? (
             <a
               href={watchUrl(id)}
               target="_blank"
               rel="noreferrer"
-              className="font-mono text-[10px] tracking-[0.22em] uppercase opacity-45 transition-opacity hover:opacity-90"
+              className="shrink-0 font-mono text-[9px] tracking-[0.18em] whitespace-nowrap uppercase opacity-45 transition-opacity hover:opacity-90 sm:text-[10px] sm:tracking-[0.22em]"
             >
               Watch on YouTube ↗
             </a>
+          ) : (
+            <span className="shrink-0 font-mono text-[9px] tracking-[0.18em] whitespace-nowrap uppercase opacity-40 sm:text-[10px] sm:tracking-[0.22em]">
+              Not transferred
+            </span>
           )}
         </div>
       </div>

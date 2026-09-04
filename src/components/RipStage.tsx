@@ -48,10 +48,13 @@ const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
  * Pins the editor's note over the category rail and tears it away from the
  * right as you scroll, so the rail is uncovered rather than scrolled to.
  *
- * Below md — and under reduced motion — there is no pinning: the note runs at
- * its natural height, the horizontal PaperTear does the transition, and the
- * rail follows. A phone cannot hold the note's stacked layout in one viewport,
- * so pinning it would crop the copy.
+ * The tear runs at every width. On a phone the note tightens its spacing to
+ * hold the whole spread inside one viewport (see the `max-md:` pass in
+ * EditorsNote) rather than dropping the animation — the runway is shortened to
+ * suit a thumb instead of a wheel.
+ *
+ * Under reduced motion there is still no pinning: the note runs at its natural
+ * height, the horizontal PaperTear does the transition, and the rail follows.
  */
 export default function RipStage() {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -59,7 +62,7 @@ export default function RipStage() {
   const reduced = useReducedMotion();
   const [progress, setProgress] = useState(0);
 
-  const staged = !narrow && !reduced;
+  const staged = !reduced;
 
   useEffect(() => {
     if (!staged) return;
@@ -108,7 +111,7 @@ export default function RipStage() {
   const remaining = 105 - rip * 112;
 
   return (
-    <div ref={ref} className="relative h-[540vh]">
+    <div ref={ref} className={`relative ${narrow ? "h-[340vh]" : "h-[540vh]"}`}>
       <div className="sticky top-0 h-[100lvh] overflow-hidden bg-[color:var(--graphite)]">
         <div className="absolute inset-0">
           <PerspectiveRail inStage scrollProgress={railScroll} />

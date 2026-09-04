@@ -38,8 +38,17 @@ async function storeSession(secret: string, expire: string) {
  * Password must be at least 8 characters"). These are the reader-facing ones.
  */
 function readableError(error: unknown, fallback: string): string {
+  // A swallowed exception here reads to the reader as "your details are wrong"
+  // when the truth is usually that the project is misconfigured. The server log
+  // is the only place the difference is visible, so it always gets the original.
+  console.error("[auth]", error);
+
   if (error instanceof AppwriteException) {
     switch (error.type) {
+      case "general_unauthorized_scope":
+        // Not the reader's problem: the API key is missing a scope. Said plainly
+        // because the alternative is somebody retyping a correct password.
+        return "The site isn't set up to create accounts yet. This is our end, not yours — the desk has been told.";
       case "user_already_exists":
       case "user_email_already_exists":
         return "An account with that email already exists. Try signing in.";

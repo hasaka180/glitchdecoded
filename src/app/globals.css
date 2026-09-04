@@ -323,22 +323,28 @@ body {
    Card art is a horizontal 6-frame strip. Stepping background-position with
    jump-none lands exactly on each frame — the default step-end would skip the
    first frame and stop short of the last.
+
+   The keyframes move the `background-position` shorthand rather than the
+   `background-position-x` longhand. WebKit only interpolates the shorthand, so
+   on Safari the longhand version snaps to its end value and the art sits dead
+   on one frame; the shorthand animates everywhere and says the same thing,
+   since the strip is one row and Y never leaves 0.
 --------------------------------------------------------------------------- */
 
 .card-sprite {
   background-repeat: no-repeat;
   background-size: 600% 100%;
-  background-position-x: 0%;
+  background-position: 0% 0%;
   image-rendering: pixelated;
   animation: sprite-run 1.7s steps(6, jump-none) infinite;
 }
 
 @keyframes sprite-run {
   from {
-    background-position-x: 0%;
+    background-position: 0% 0%;
   }
   to {
-    background-position-x: 100%;
+    background-position: 100% 0%;
   }
 }
 
@@ -732,4 +738,122 @@ body {
 </svg>");
   background-size: 240px 240px;
   background-repeat: repeat;
+}
+
+/* ---------------------------------------------------------------------------
+   Pinned stages on a small screen
+   The tear runs at every width, so the sheet being torn away has to hold its
+   whole spread inside one viewport wherever it plays. Where the viewport
+   cannot take that spread at its natural rhythm — a phone in either
+   orientation, hence both a width and a height clause — the air between the
+   blocks comes out and the art comes down. Nothing is dropped: a reader on a
+   phone gets the same note and the same archive, printed tighter.
+
+   Outside a cascade layer on purpose, so it wins over the Tailwind utilities
+   it is overriding without either side needing !important.
+--------------------------------------------------------------------------- */
+
+@media (max-width: 767px), (max-height: 700px) {
+  /* the editor's note */
+  .stage-tight .note-spread {
+    gap: 1rem;
+  }
+  .stage-tight .note-eyebrow {
+    margin-bottom: 0.5rem;
+  }
+  .stage-tight .note-title {
+    font-size: 1.28rem;
+  }
+  .stage-tight .note-art {
+    max-width: 124px;
+  }
+  .stage-tight .note-prose {
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+  .stage-tight .note-prose .fly-block {
+    margin-bottom: 0.5rem;
+  }
+
+  /* the film archive */
+  .stage-tight .reel-head {
+    margin-bottom: 0.75rem;
+  }
+  .stage-tight .reel-head h2 {
+    font-size: 1.25rem;
+  }
+  .stage-tight .reel-head p {
+    font-size: 0.85rem;
+    line-height: 1.35;
+  }
+  .stage-tight .reel-set {
+    padding: 0.5rem;
+  }
+  .stage-tight .reel-pic {
+    max-height: 30lvh;
+  }
+  .stage-tight .reel-list {
+    gap: 0.5rem;
+  }
+  .stage-tight .reel-list > li {
+    width: 13rem;
+  }
+  .stage-tight .reel-list button {
+    gap: 0.75rem;
+    padding: 0.625rem;
+  }
+  .stage-tight .reel-outro {
+    margin-top: 0.75rem;
+  }
+}
+
+/* A phone held sideways is the tightest case there is — ~390px of height for a
+   set, its programme and a heading. Everything above still applies; this pass
+   only takes the numbers down another notch so the archive keeps all of its
+   copy rather than losing a line off each end to the stage's clip. */
+@media (max-height: 520px) {
+  .stage-tight {
+    padding-block: 0.5rem;
+  }
+  .stage-tight .reel-pic {
+    max-height: 19lvh;
+  }
+  .stage-tight .reel-head {
+    margin-bottom: 0.5rem;
+  }
+  .stage-tight .reel-head h2 {
+    font-size: 1.05rem;
+  }
+  .stage-tight .reel-head p {
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+  .stage-tight .reel-list button {
+    padding: 0.5rem;
+  }
+  .stage-tight .reel-set {
+    padding: 0.375rem;
+  }
+  .stage-tight .reel-outro {
+    margin-top: 0.375rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* The reel's line, inside the tube. The card is absolutely positioned to the
+   picture, so an over-long line has nowhere to go and would run under the
+   source row beneath it — clamped to what the frame actually holds. */
+.reel-line {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+@media (min-width: 640px) {
+  .reel-line {
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+  }
 }

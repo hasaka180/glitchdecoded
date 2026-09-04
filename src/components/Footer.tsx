@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CATEGORIES } from "@/lib/categories";
 
 import PaperTear from "./PaperTear";
+import { SOCIALS } from "./SocialLinks";
 
 /**
  * The sign-off. The board is the last thing the reader touches, so the page
@@ -49,18 +50,19 @@ const TAKE_PART: Entry[] = [
   { label: "Sign up", href: "/signup" },
 ];
 
-/** Handles. Placeholder anchors, like the article slugs elsewhere. */
-const ELSEWHERE: Entry[] = [
-  { label: "Instagram", href: "#instagram" },
-  { label: "YouTube", href: "#youtube" },
-  { label: "Substack", href: "#substack" },
-  { label: "RSS", href: "#rss" },
-];
+/**
+ * Handles, set as words rather than marks — the sign-off is a broadcast, and a
+ * broadcast reads its credits out. The contact page shows the same four as
+ * icons; both come from `SOCIALS`, so a real URL only has to be written once.
+ */
+const ELSEWHERE: Entry[] = SOCIALS.map(({ label, href }) => ({ label, href }));
 
 function Column({ title, links }: { title: string; links: Entry[] }) {
   return (
     <div>
-      <h3 className="font-arial text-[10px] font-bold tracking-[0.26em] uppercase opacity-45">
+      {/* Two lines' worth below lg, or "The magazine" wraps and its list
+          starts a line lower than the two beside it. */}
+      <h3 className="min-h-[2.6em] font-arial text-[10px] font-bold tracking-[0.26em] uppercase opacity-45 lg:min-h-0">
         {title}
       </h3>
       <ul className="mt-5 space-y-3">
@@ -68,18 +70,18 @@ function Column({ title, links }: { title: string; links: Entry[] }) {
           <li key={label}>
             <Link
               href={href}
-              className="group inline-flex items-center gap-3 font-garamond text-[16px] leading-none opacity-75 transition-opacity hover:opacity-100 sm:text-[17px]"
+              className="group inline-flex items-start gap-2 font-garamond text-[15px] leading-[1.25] opacity-75 transition-opacity hover:opacity-100 sm:gap-3 sm:text-[17px]"
             >
               {hue ? (
                 <span
                   aria-hidden
-                  className="size-2 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+                  className="mt-[0.36em] size-2 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
                   style={{ backgroundColor: hue }}
                 />
               ) : (
                 <span
                   aria-hidden
-                  className="size-2 shrink-0 bg-current opacity-0 transition-opacity group-hover:opacity-40"
+                  className="mt-[0.36em] size-2 shrink-0 bg-current opacity-0 transition-opacity group-hover:opacity-40"
                 />
               )}
               {label}
@@ -177,9 +179,16 @@ export default function Footer({
               </ul>
             </div>
 
-            <Column title="Sections" links={SECTIONS} />
-            <Column title="The magazine" links={MAGAZINE} />
-            <Column title="Take part" links={TAKE_PART} />
+            {/* Three across at every width. Stacked, the fifteen links read as
+                one long ladder and push the sign-off a screen and a half down;
+                side by side they stay a contents page, which is what they are.
+                Their own grid below lg so they keep that shape inside the
+                single column the masthead leaves them. */}
+            <div className="grid grid-cols-3 gap-x-4 gap-y-10 lg:contents">
+              <Column title="Sections" links={SECTIONS} />
+              <Column title="The magazine" links={MAGAZINE} />
+              <Column title="Take part" links={TAKE_PART} />
+            </div>
           </div>
 
           {/* the nav's broken signal bar, closing what it opened */}
@@ -192,7 +201,23 @@ export default function Footer({
           </div>
 
           <div className="mt-7 flex flex-col gap-5 font-arial text-[9px] font-bold tracking-[0.18em] uppercase opacity-45 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
-            <p>© {new Date().getFullYear()} Glitch Decoded</p>
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>© {new Date().getFullYear()} Glitch Decoded</span>
+              <span aria-hidden className="opacity-40">
+                ·
+              </span>
+              <span className="opacity-80">
+                Powered by{" "}
+                <a
+                  href="https://thedarwin.co/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-4 transition-opacity hover:opacity-100"
+                >
+                  Darwin Corp
+                </a>
+              </span>
+            </p>
 
             <p className="hidden max-w-[46ch] normal-case opacity-90 md:block">
               Set in Paquthy, Asthetic Pixel and Cormorant Garamond

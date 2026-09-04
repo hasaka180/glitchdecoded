@@ -82,8 +82,14 @@ export default function EditorsNote({ drive }: Props = {}) {
     setHero({
       dx: s.left + s.width / 2 - (r.left + r.width / 2),
       dy: s.top + s.height / 2 - (r.top + r.height / 2),
-      // constrained by both axes, or six lines of script run off the screen
-      scale: Math.min(2.9, (s.width * 0.66) / r.width, (s.height * 0.82) / r.height),
+      // Constrained by both axes, or six lines of script run off the screen —
+      // and never below 1: on a phone the statement already fills the column,
+      // so the fit would come out under 1 and the opening would shrink the
+      // line rather than blow it up. At the floor it simply travels.
+      scale: Math.max(
+        1,
+        Math.min(2.9, (s.width * 0.66) / r.width, (s.height * 0.82) / r.height),
+      ),
     });
   }, []);
 
@@ -246,13 +252,13 @@ export default function EditorsNote({ drive }: Props = {}) {
         ref={stageRef}
         className={
           driven
-            ? "w-full"
+            ? "stage-tight w-full"
             : staged
               ? "sticky top-0 flex h-[100lvh] items-center overflow-hidden px-5 sm:px-10"
               : "fly-timed w-full"
         }
       >
-        <div className="mx-auto grid w-full max-w-[1400px] items-center gap-10 md:grid-cols-[auto_auto_auto] md:justify-center md:gap-12 lg:gap-16">
+        <div className="note-spread mx-auto grid w-full max-w-[1400px] items-center gap-10 md:grid-cols-[auto_auto_auto] md:justify-center md:gap-12 lg:gap-16">
           {/* 1 — the hand. Starts centred and oversized, then travels here. */}
           <div
             ref={scriptRef}
@@ -266,12 +272,12 @@ export default function EditorsNote({ drive }: Props = {}) {
             }}
           >
             <div style={appear(0, 0)} className="fly-block">
-              <p className="mb-7 font-arial text-[10px] font-bold tracking-[0.3em] uppercase opacity-60">
+              <p className="note-eyebrow mb-7 font-arial text-[10px] font-bold tracking-[0.3em] uppercase opacity-60">
                 Editor&rsquo;s note
               </p>
             </div>
 
-            <h2 className="font-pixel text-[clamp(1.5rem,3.1vw,2.5rem)] leading-[1.15] text-[color:var(--script-red)] md:whitespace-nowrap">
+            <h2 className="note-title font-pixel text-[clamp(1.5rem,3.1vw,2.5rem)] leading-[1.15] text-[color:var(--script-red)] md:whitespace-nowrap">
               {TITLE.lines.map((words, line) => (
                 <div key={line}>
                   {words.map((chars, word) => (
@@ -311,11 +317,11 @@ export default function EditorsNote({ drive }: Props = {}) {
             src="/assets/umbrella-animated.svg"
             alt="Two figures sheltering under one umbrella in the rain"
             style={appear(0.1, 1.15)}
-            className="fly-block mx-auto w-full max-w-[230px] self-center sm:max-w-[300px] md:w-[clamp(220px,22vw,330px)] md:max-w-none"
+            className="note-art fly-block mx-auto w-full max-w-[230px] self-center sm:max-w-[300px] md:w-[clamp(220px,22vw,330px)] md:max-w-none"
           />
 
           {/* 3 — the prose */}
-          <div className="max-w-[38ch] font-garamond text-[clamp(0.95rem,1.05vw,1.1rem)] leading-[1.6]">
+          <div className="note-prose max-w-[38ch] font-garamond text-[clamp(0.95rem,1.05vw,1.1rem)] leading-[1.6]">
             <div style={appear(0.18, 1.5)} className="fly-block mb-6">
               <span className="block font-arial text-[0.75em] font-bold tracking-[0.06em] uppercase">
                 We live inside weather —

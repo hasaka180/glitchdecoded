@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   Cormorant_Garamond,
   Geist,
@@ -53,10 +53,55 @@ const cormorant = Cormorant_Garamond({
   weight: ["300", "400", "500", "600"],
 });
 
+/**
+ * Where a link to this site is unfurled — a search result, a chat preview, a
+ * card in a timeline — this is what it says. `metadataBase` is what lets the
+ * relative `url` and `canonical` paths the article pages already set resolve
+ * to absolute ones; set NEXT_PUBLIC_SITE_URL in the deploy environment so they
+ * point at the real host rather than at localhost.
+ */
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+const TITLE = "Glitch Decoded — unpopular opinions, untold stories";
+const DESCRIPTION =
+  "A magazine for the things the scroll hurries past: unpopular opinions, untold stories and long reads, each one chosen by an editor rather than a feed.";
+
 export const metadata: Metadata = {
-  title: "A Glitch in the Matrix — Decoded",
-  description:
-    "Unpopular opinions and untold stories. Move your cursor and the picture fractures into glass where you look.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  applicationName: "Glitch Decoded",
+  keywords: [
+    "independent magazine",
+    "unpopular opinions",
+    "untold stories",
+    "long reads",
+    "essays",
+    "reality check",
+    "deep dives",
+  ],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Glitch Decoded",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: "/",
+    locale: "en_US",
+  },
+  // Images and card type are filled in from the opengraph-image route.
+  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+  },
+};
+
+/** Paints the mobile browser chrome the ink the page is already painted. */
+export const viewport: Viewport = {
+  themeColor: "#07070c",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children, modal }: LayoutProps<"/">) {

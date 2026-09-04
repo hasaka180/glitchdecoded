@@ -206,7 +206,7 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
       id="screening"
       className={`stock relative overflow-hidden bg-[color:var(--graphite)] text-[color:var(--ink)] ${
         inStage
-          ? "flex h-full items-center py-6"
+          ? "stage-tight flex h-full items-center py-6"
           : "pt-14 pb-20 sm:pt-20 sm:pb-28"
       }`}
     >
@@ -223,7 +223,7 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
         </div>
 
         <header
-          className={`flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-10 ${
+          className={`reel-head flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-10 ${
             inStage ? "mb-6" : "mb-10 sm:mb-14"
           }`}
         >
@@ -243,13 +243,13 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
 
         <div className="grid gap-6 lg:grid-cols-[7fr_5fr] lg:gap-8">
           {/* The set: cabinet, perforated edges, picture. */}
-          <div className="pixel-corner relative bg-black p-3 text-[color:var(--bone)] sm:p-4">
+          <div className="reel-set pixel-corner relative bg-black p-3 text-[color:var(--bone)] sm:p-4">
             <span aria-hidden className="sprockets absolute inset-y-4 left-[6px] w-[6px] opacity-40" />
             <span aria-hidden className="sprockets absolute inset-y-4 right-[6px] w-[6px] opacity-40" />
 
             <div className="relative mx-[10px] overflow-hidden rounded-[10px] bg-black">
               <div
-                className={`relative aspect-[16/10] w-full ${inStage ? "max-h-[46lvh]" : ""}`}
+                className={`reel-pic relative aspect-[16/10] w-full ${inStage ? "max-h-[46lvh]" : ""}`}
               >
                 {playing && reel.src ? (
                   <video
@@ -312,7 +312,7 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
               `h-full`, so the list's own length never stretches the grid row —
               the picture alone decides how tall the pair is. */}
           <div className="lg:relative">
-            <ul className="scrollbar-none -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 lg:absolute lg:inset-0 lg:mx-0 lg:flex-col lg:snap-none lg:overflow-x-hidden lg:overflow-y-auto lg:px-0">
+            <ul className="reel-list scrollbar-none -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 lg:absolute lg:inset-0 lg:mx-0 lg:flex-col lg:snap-none lg:overflow-x-hidden lg:overflow-y-auto lg:px-0">
               {REELS.map((item, i) => {
                 const on = i === current;
                 return (
@@ -367,7 +367,7 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
           </div>
         </div>
 
-        <div className={inStage ? "mt-6 text-center" : "mt-12 text-center sm:mt-16"}>
+        <div className={`reel-outro text-center ${inStage ? "mt-6" : "mt-12 sm:mt-16"}`}>
           <Link
             href="/video-library"
             className="inline-flex items-center gap-2 font-garamond text-[17px] tracking-wide opacity-75 transition-opacity hover:opacity-100"

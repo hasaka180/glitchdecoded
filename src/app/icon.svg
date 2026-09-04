@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <title>Glitch Decoded</title>
+  <!-- Nine pixel squares on ink. The middle column rides a unit low and the
+       centre square is struck out in red — the glitch the masthead is named
+       for. Geometry mirrors scripts/generate-icons.js; change both together. -->
+  <rect width="16" height="16" fill="#07070c"/>
+  <g fill="#efe87b">
+    <rect x="1" y="1" width="4" height="4"/>
+    <rect x="11" y="1" width="4" height="4"/>
+    <rect x="1" y="6" width="4" height="4"/>
+    <rect x="11" y="6" width="4" height="4"/>
+    <rect x="1" y="11" width="4" height="4"/>
+    <rect x="11" y="11" width="4" height="4"/>
+    <rect x="6" y="2" width="4" height="4"/>
+    <rect x="6" y="12" width="4" height="4"/>
+  </g>
+  <rect x="6" y="7" width="4" height="4" fill="#ec1b2e"/>
+</svg>
