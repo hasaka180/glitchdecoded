@@ -1,16 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { ID } from "node-appwrite";
 
+import { DATABASE_ID, TABLES } from "@/lib/appwrite/config";
 import {
-  BUCKET_ID,
-  COVER_MAX_BYTES,
-  COVER_TYPES,
-  DATABASE_ID,
-  fileViewUrl,
-  TABLES,
-} from "@/lib/appwrite/config";
+  deleteStoredImage,
+  imageProblem,
+  storeImage,
+} from "@/lib/appwrite/images";
 import { createAdminClient } from "@/lib/appwrite/server";
 import { getArticleById } from "@/lib/articles/queries";
 import { canEditArticle, getCurrentUser } from "@/lib/auth/dal";
@@ -42,20 +39,6 @@ async function loadEditable(articleId: string) {
   return { article } as const;
 }
 
-/** Removes the bytes behind a cover, tolerating one that is already gone. */
-async function deleteFile(fileId: string | null) {
-  if (!fileId) return;
-  try {
-    await createAdminClient().storage.deleteFile({
-      bucketId: BUCKET_ID,
-      fileId,
-    });
-  } catch {
-    // Already deleted, or never made it. Either way the row is about to stop
-    // pointing at it, and a failure here must not block the replacement.
-  }
-}
-
 export async function uploadCover(
   _prev: CoverState,
   formData: FormData,
@@ -66,45 +49,28 @@ export async function uploadCover(
   const { article } = loaded;
 
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    return { error: "Pick an image first." };
-  }
-  if (!COVER_TYPES.includes(file.type)) {
-    return { error: "That has to be a JPG, PNG, WebP or AVIF." };
-  }
-  if (file.size > COVER_MAX_BYTES) {
-    return {
-      error: `That's ${(file.size / 1024 / 1024).toFixed(1)} MB — the limit is ${COVER_MAX_BYTES / 1024 / 1024} MB.`,
-    };
-  }
+  const problem = imageProblem(file);
+  if (problem) return { error: problem };
 
-  const storage = createAdminClient().storage;
-
-  const uploaded = await storage.createFile({
-    bucketId: BUCKET_ID,
-    fileId: ID.unique(),
-    file,
-  });
+  const stored = await storeImage(file as File);
 
   // The old file goes only once the new one is safely stored, so a failed
   // upload leaves the piece with the cover it already had.
-  await deleteFile(article.coverImageId);
-
-  const url = fileViewUrl(uploaded.$id);
+  await deleteStoredImage(article.coverImageId);
 
   await createAdminClient().tablesDB.updateRow({
     databaseId: DATABASE_ID,
     tableId: TABLES.articles,
     rowId: article.$id,
     data: {
-      coverImageId: uploaded.$id,
-      coverImageUrl: url,
+      coverImageId: stored.id,
+      coverImageUrl: stored.url,
       coverSource: "upload",
     },
   });
 
   revalidatePath(`/dashboard/articles/${article.$id}`);
-  return { url };
+  return { url: stored.url };
 }
 
 export async function removeCover(
@@ -116,7 +82,7 @@ export async function removeCover(
   if ("error" in loaded) return { error: loaded.error };
   const { article } = loaded;
 
-  await deleteFile(article.coverImageId);
+  await deleteStoredImage(article.coverImageId);
 
   await createAdminClient().tablesDB.updateRow({
     databaseId: DATABASE_ID,

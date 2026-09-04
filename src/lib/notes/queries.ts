@@ -17,11 +17,21 @@ import { SEED, type Note } from "@/lib/notes/seed";
 export type NoteRow = Models.Row & {
   text: string;
   sign: string;
+  imageId: string | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
   position: number;
 };
 
 export function rowToNote(row: NoteRow): Note {
-  return { id: row.$id, text: row.text, sign: row.sign ?? "" };
+  return {
+    id: row.$id,
+    text: row.text,
+    sign: row.sign ?? "",
+    ...(row.imageUrl
+      ? { image: { url: row.imageUrl, alt: row.imageAlt ?? "" } }
+      : {}),
+  };
 }
 
 export async function listNoteRows(): Promise<NoteRow[]> {

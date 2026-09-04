@@ -280,6 +280,12 @@ const SCHEMA = [
       // those stay in their browser and are nobody else's business.
       str("text", 300, true),
       str("sign", 120),
+      // A picture on the note, instead of the category art the slot would
+      // otherwise carry. Alt text is stored with it rather than as an
+      // afterthought — a picture the desk chose is saying something.
+      str("imageId", 64),
+      str("imageUrl", 2000),
+      str("imageAlt", 300),
       // Explicit running order, as with the reels: a note written later often
       // belongs in the middle of the board.
       int("position", { min: 0, max: 999, xdefault: 0 }),

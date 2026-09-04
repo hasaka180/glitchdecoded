@@ -27,6 +27,8 @@ export default async function NotesPage() {
     id: row.$id,
     text: row.text ?? "",
     sign: row.sign ?? "",
+    imageUrl: row.imageUrl,
+    imageAlt: row.imageAlt ?? "",
     position: row.position ?? 0,
   }));
 

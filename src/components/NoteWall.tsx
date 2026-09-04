@@ -298,13 +298,26 @@ export default function NoteWall({
           className="pixel-corner relative flex h-full min-h-[16rem] flex-col justify-end overflow-hidden p-5 text-[color:var(--bone)]"
           style={{ backgroundImage: `linear-gradient(160deg, ${slot.from}, ${slot.to})` }}
         >
-          {/* The art runs the whole card, off the same six-frame strip the
-              category rail animates. */}
-          <span
-            aria-hidden
-            className="card-sprite absolute inset-0"
-            style={{ backgroundImage: `url(${slot.art})` }}
-          />
+          {/* A picture the desk put on the note is a real image with a
+              description, because it was chosen to say something. The category
+              art behind the rest is decoration and stays a background. */}
+          {note.image ? (
+            // An Appwrite Storage URL on whatever endpoint the project is on,
+            // which next/image would need configured as a remote host.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={note.image.url}
+              alt={note.image.alt}
+              className="absolute inset-0 size-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <span
+              aria-hidden
+              className="card-sprite absolute inset-0"
+              style={{ backgroundImage: `url(${slot.art})` }}
+            />
+          )}
           {/* …and darkens under the hand, so the note reads over whatever the
               art happens to be doing there. */}
           <span

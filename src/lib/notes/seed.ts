@@ -15,6 +15,11 @@ export type Note = {
   sign: string;
   /** Written by this reader, on this device. */
   mine?: boolean;
+  /**
+   * A picture the desk put on the note. Without one the card keeps the
+   * category art its slot carries, which is decorative and needs no alt.
+   */
+  image?: { url: string; alt: string };
 };
 
 export const SEED: Note[] = [
