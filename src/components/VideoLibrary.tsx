@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 
 import {
   type Reel,
-  REELS,
   embedSrc,
   thumbnailSrc,
   watchUrl,
@@ -100,13 +99,13 @@ function TitleCard({ reel, index }: { reel: Reel; index: number }) {
   );
 }
 
-export default function VideoLibrary() {
+export default function VideoLibrary({ reels }: { reels: Reel[] }) {
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [tuning, setTuning] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const reel = REELS[current];
+  const reel = reels[current];
   const id = youtubeId(reel.url);
 
   /** Changing reel snaps the tube to static for a beat, the way a set does. */
@@ -252,12 +251,12 @@ export default function VideoLibrary() {
             The programme
           </h2>
           <p className="font-mono text-[10px] tracking-[0.22em] uppercase opacity-40">
-            {REELS.length} reels
+            {reels.length} reels
           </p>
         </div>
 
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {REELS.map((entry, i) => {
+          {reels.map((entry, i) => {
             const entryId = youtubeId(entry.url);
             const live = i === current;
 

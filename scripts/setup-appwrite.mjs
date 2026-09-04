@@ -273,6 +273,31 @@ const SCHEMA = [
     ],
   },
   {
+    id: "reels",
+    name: "Video library",
+    columns: [
+      str("speaker", 160, true),
+      str("line", 400),
+      str("source", 200),
+      str("year", 12),
+      str("stock", 60),
+      // Two shades of the same accent: one lit for the black set, one taken
+      // down for the graphite ground where the lit one washes out.
+      str("hue", 16),
+      str("inkHue", 16),
+      // Empty is a real state — the reel lists as untransferred rather than
+      // disappearing, which is the honest picture of an archive entry.
+      str("url", 500),
+      str("runtime", 40),
+      // Explicit rather than by creation date: the programme has an order the
+      // desk chooses, and a reel added later often belongs in the middle.
+      int("position", { min: 0, max: 999, xdefault: 0 }),
+    ],
+    indexes: [
+      { key: "by_position", type: TablesDBIndexType.Key, columns: ["position"] },
+    ],
+  },
+  {
     id: "companion_messages",
     name: "Companion messages",
     columns: [

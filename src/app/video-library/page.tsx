@@ -4,7 +4,14 @@ import Footer from "@/components/Footer";
 import PageMasthead from "@/components/PageMasthead";
 import PaperTear from "@/components/PaperTear";
 import VideoLibrary from "@/components/VideoLibrary";
-import { REELS, youtubeId } from "@/lib/videos";
+import { listReels } from "@/lib/reels/queries";
+import { youtubeId } from "@/lib/videos";
+
+/**
+ * Refreshed on a timer: the programme is edited at the desk now, and a reel
+ * linked this morning should not wait for a deploy to be watchable.
+ */
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Video Library — Glitch Decoded",
@@ -12,8 +19,9 @@ export const metadata: Metadata = {
     "Old men, old tape, live wounds: broadcasts in which people who thought for a living were asked, on camera, how to bear being alive.",
 };
 
-export default function VideoLibraryPage() {
-  const transferred = REELS.filter((reel) => youtubeId(reel.url) !== null).length;
+export default async function VideoLibraryPage() {
+  const reels = await listReels();
+  const transferred = reels.filter((reel) => youtubeId(reel.url) !== null).length;
 
   return (
     <>
@@ -38,11 +46,11 @@ export default function VideoLibraryPage() {
               </p>
 
               <p className="font-mono text-[10px] tracking-[0.22em] uppercase opacity-45">
-                {transferred} of {REELS.length} transferred
+                {transferred} of {reels.length} transferred
               </p>
             </div>
 
-            <VideoLibrary />
+            <VideoLibrary reels={reels} />
 
             <p className="mt-12 max-w-[62ch] font-garamond text-[16px] leading-[1.55] opacity-45 sm:mt-16">
               A reel marked untransferred has no link against it yet. It stays

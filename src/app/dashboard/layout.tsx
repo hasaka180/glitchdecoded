@@ -43,6 +43,14 @@ export default async function DashboardLayout({
             </Link>
             {user.isSuperadmin && (
               <Link
+                href="/dashboard/reels"
+                className="font-arial text-[10px] font-bold tracking-[0.18em] uppercase opacity-60 transition-opacity hover:opacity-100"
+              >
+                Video library
+              </Link>
+            )}
+            {user.isSuperadmin && (
+              <Link
                 href="/dashboard/review"
                 className="font-arial text-[10px] font-bold tracking-[0.18em] uppercase transition-colors"
                 style={{ color: "var(--cyan)" }}
