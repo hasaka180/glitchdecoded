@@ -13,8 +13,6 @@ export type Note = {
   text: string;
   /** How it was signed. Initials, a first name, a time — whatever was given. */
   sign: string;
-  /** Written by this reader, on this device. */
-  mine?: boolean;
   /**
    * A picture the desk put on the note. Without one the card keeps the
    * category art its slot carries, which is decorative and needs no alt.

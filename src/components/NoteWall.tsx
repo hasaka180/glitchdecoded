@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 import { SEED, type Note } from "@/lib/notes/seed";
 
@@ -15,93 +16,17 @@ import { useReducedMotion } from "@/lib/useReducedMotion";
  * of its own. Each note carries a band of the category art, animated off the
  * same six-frame strips the category rail runs on.
  *
- * There is no server behind this — a note the reader pins is kept in their own
- * browser, and the copy says so rather than implying it was posted anywhere.
+ * The notes are the magazine's, edited at the desk. The board used to let a
+ * reader pin one into their own browser; it is editorial now, and "Write one"
+ * goes to the desk — which sends anyone not signed in to the sign-in page.
  */
 
 
-const KEY = "glitch:notes-to-self";
-const LIMIT = 140;
-/** How many of the reader's own notes are kept. */
-const KEEP = 24;
 /** Notes on the board at once. The rail shows four of them and turns. */
 const RING = 6;
 /** How long a card sits before the rail steps on, and how long the step takes. */
 const DWELL = 3800;
 const SLIDE = 700;
-/**
- * The reader's own notes, read straight out of localStorage.
- *
- * Through useSyncExternalStore rather than state seeded in an effect: the
- * server has no store, so a lazy initialiser would make the first client
- * render disagree with the server HTML. The snapshot is cached against the raw
- * string so it stays referentially stable between reads — re-parsing on every
- * call would loop React forever.
- */
-const EMPTY: Note[] = [];
-const listeners = new Set<() => void>();
-let cachedRaw: string | null = null;
-let cachedNotes: Note[] = EMPTY;
-
-function rawNotes(): string | null {
-  try {
-    return window.localStorage.getItem(KEY);
-  } catch {
-    // private mode, or a store the browser has blocked
-    return null;
-  }
-}
-
-function parseNotes(raw: string | null): Note[] {
-  if (!raw) return EMPTY;
-  try {
-    const saved: unknown = JSON.parse(raw);
-    if (!Array.isArray(saved)) return EMPTY;
-    return saved
-      .filter(
-        (n): n is Note =>
-          !!n && typeof n === "object" && typeof (n as Note).text === "string",
-      )
-      .map((n) => ({ ...n, mine: true }));
-  } catch {
-    // a corrupt store just means an empty board
-    return EMPTY;
-  }
-}
-
-function readNotes(): Note[] {
-  const raw = rawNotes();
-  if (raw === cachedRaw) return cachedNotes;
-  cachedRaw = raw;
-  cachedNotes = parseNotes(raw);
-  return cachedNotes;
-}
-
-function writeNotes(next: Note[]) {
-  const raw = JSON.stringify(next);
-  let stored = false;
-  try {
-    window.localStorage.setItem(KEY, raw);
-    stored = true;
-  } catch {
-    // the note still shows for this visit, it just will not survive a reload
-  }
-  // Keep the cache agreeing with what the store actually holds, or the very
-  // next read would throw the note away again.
-  cachedRaw = stored ? raw : rawNotes();
-  cachedNotes = next;
-  for (const listener of listeners) listener();
-}
-
-function subscribe(onChange: () => void) {
-  listeners.add(onChange);
-  // another tab of the same site pinning a note
-  window.addEventListener("storage", onChange);
-  return () => {
-    listeners.delete(onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
 
 /**
  * What a slot on the board looks like: the art the note is written over, the
@@ -154,12 +79,6 @@ export default function NoteWall({
 }: Props) {
   const grid = layout === "grid";
   const sectionRef = useRef<HTMLElement | null>(null);
-  const fieldRef = useRef<HTMLTextAreaElement | null>(null);
-
-  const mine = useSyncExternalStore(subscribe, readNotes, () => EMPTY);
-  const [open, setOpen] = useState(false);
-  const [text, setText] = useState("");
-  const [sign, setSign] = useState("");
   const [live, setLive] = useState(false);
 
   const reduced = useReducedMotion();
@@ -192,8 +111,8 @@ export default function NoteWall({
     return () => io.disconnect();
   }, [inStage]);
 
-  // Autoplay. Held while the reader is on the rail or writing, and off
-  // entirely under reduced motion, where the rail scrolls by hand instead.
+  // Autoplay. Held while the reader is on the rail, and off entirely under
+  // reduced motion, where the rail scrolls by hand instead.
   //
   // Driven off requestAnimationFrame against a wall clock rather than
   // setInterval: iOS Safari throttles timers during momentum scrolling and in
@@ -201,7 +120,7 @@ export default function NoteWall({
   // background — a rail on setInterval comes back from that either stalled or
   // owing a burst of missed steps. Measuring elapsed time means a stall costs
   // one step, not a queue of them, and rAF stops and restarts with the page.
-  const paused = held || open || reduced || grid;
+  const paused = held || reduced || grid;
   useEffect(() => {
     if (paused) return;
     let raf = 0;
@@ -242,33 +161,8 @@ export default function NoteWall({
     };
   }, [snapping]);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    fieldRef.current?.focus();
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
-
-  const pin = useCallback(() => {
-    const body = text.trim();
-    if (!body) return;
-    const note: Note = {
-      id: `m${Date.now()}`,
-      text: body.slice(0, LIMIT),
-      sign: sign.trim().slice(0, 24) || "anon",
-      mine: true,
-    };
-    writeNotes([note, ...readNotes()].slice(0, KEEP));
-    setText("");
-    setSign("");
-    setOpen(false);
-  }, [text, sign]);
-
   // The rail is a fixed ring so its arithmetic holds; the grid shows the lot.
-  const notes = grid ? [...mine, ...seed] : [...mine, ...seed].slice(0, RING);
+  const notes = grid ? seed : seed.slice(0, RING);
   /** A second lap of the same notes, so the rail can turn without a seam. */
   const track = [...notes, ...notes];
 
@@ -345,11 +239,6 @@ export default function NoteWall({
             </p>
             <p className="mt-4 flex items-center gap-2 font-arial text-[9px] font-bold tracking-[0.18em] uppercase opacity-60">
               {note.sign}
-              {note.mine && (
-                <span style={{ color: slot.hue }} className="opacity-90">
-                  · yours
-                </span>
-              )}
             </p>
           </div>
         </article>
@@ -388,16 +277,18 @@ export default function NoteWall({
                 heading ? "hidden sm:block" : "hidden"
               }`}
             >
-              Notes readers left themselves on the way out. Pin one of your own —
-              it stays in this browser, on this device, and goes nowhere else.
+Notes left on the way out, for whoever is reading on a bad
+              Tuesday. Written at the desk and pinned here.
             </p>
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
+            {/* Straight to the desk. Signed out, that route sends you to sign
+                in and back again; it costs this page nothing, where reading the
+                session here would make the whole front page render per request. */}
+            <Link
+              href="/dashboard/notes"
               className="pixel-corner-sm shrink-0 cursor-pointer bg-[color:var(--script-red)] px-5 py-3 font-arial text-[10px] font-bold tracking-[0.2em] text-[color:var(--paper)] uppercase transition-opacity hover:opacity-85"
             >
               Write one →
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -454,76 +345,12 @@ export default function NoteWall({
 
         {heading && (
           <p className="mx-auto mt-8 w-full max-w-[1200px] px-5 font-garamond text-[15px] leading-[1.55] opacity-70 sm:hidden sm:px-10">
-            Notes readers left themselves on the way out. Pin one of your own —
-            it stays in this browser, on this device, and goes nowhere else.
+            Notes left on the way out, for whoever is reading on a bad
+            Tuesday. Written at the desk and pinned here.
           </p>
         )}
       </div>
 
-      {/* The composer is fixed to the viewport rather than laid into the board:
-          inside the tear stage the board is pinned to the scroll position, and
-          a form that moved while it was being typed into would be unusable. */}
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--ink)]/70 px-5 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Write a note to yourself"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
-          }}
-        >
-          <div className="paper ruled pixel-corner w-full max-w-[560px] p-6 text-[color:var(--ink-brown)] shadow-[0_30px_80px_rgba(0,0,0,0.6)] sm:p-8">
-            <div className="mb-5 flex items-baseline justify-between gap-4">
-              <p className="font-pixel text-[20px] leading-[1.1] tracking-[0.02em] text-[color:var(--script-red)] uppercase sm:text-[24px]">
-                Note to self
-              </p>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="cursor-pointer font-arial text-[10px] font-bold tracking-[0.2em] uppercase opacity-50 transition-opacity hover:opacity-100"
-              >
-                Close
-              </button>
-            </div>
-
-            <textarea
-              ref={fieldRef}
-              value={text}
-              maxLength={LIMIT}
-              onChange={(e) => setText(e.target.value)}
-              rows={3}
-              placeholder="Whatever you would want to read back on a bad Tuesday."
-              className="w-full resize-none bg-transparent font-garamond text-[1.25rem] leading-[1.5] outline-none placeholder:opacity-35"
-            />
-
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-[color:var(--ink-brown)]/20 pt-4">
-              <input
-                value={sign}
-                maxLength={24}
-                onChange={(e) => setSign(e.target.value)}
-                placeholder="Sign it — initials, a city, nothing"
-                className="min-w-0 flex-1 bg-transparent font-arial text-[10px] font-bold tracking-[0.18em] uppercase outline-none placeholder:opacity-35"
-              />
-              <span className="font-arial text-[10px] tracking-[0.18em] tabular-nums opacity-40">
-                {LIMIT - text.length}
-              </span>
-              <button
-                type="button"
-                onClick={pin}
-                disabled={!text.trim()}
-                className="pixel-corner-sm cursor-pointer bg-[color:var(--script-red)] px-5 py-3 font-arial text-[10px] font-bold tracking-[0.2em] text-[color:var(--paper)] uppercase transition-opacity disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                Pin it
-              </button>
-            </div>
-
-            <p className="mt-4 font-arial text-[9px] tracking-[0.18em] uppercase opacity-40">
-              Kept on this device only
-            </p>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

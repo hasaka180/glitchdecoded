@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import NoteEditor, { type EditableNote } from "@/components/cms/NoteEditor";
 import SubmitButton from "@/components/cms/SubmitButton";
 import { BUTTON_GHOST, BUTTON_PRIMARY, EYEBROW } from "@/components/cms/ui";
 import { addNote, seedNotes } from "@/lib/actions/notes";
 import { listNoteRows } from "@/lib/notes/queries";
-import { requireSuperadmin } from "@/lib/auth/dal";
+import { requireUser } from "@/lib/auth/dal";
 
 export const metadata: Metadata = {
   title: "Notes to self — The desk",
@@ -20,7 +21,34 @@ export const metadata: Metadata = {
  * them in so many words — there is nothing of theirs on this screen to edit.
  */
 export default async function NotesPage() {
-  await requireSuperadmin();
+  // `requireUser` rather than `requireSuperadmin`: the board's "Write one"
+  // sends everybody here, so a signed-in contributor arriving is expected and
+  // deserves a sentence rather than a silent bounce to their own pieces. The
+  // actions still gate on superadmin themselves.
+  const user = await requireUser("/dashboard/notes");
+
+  if (!user.isSuperadmin) {
+    return (
+      <div className="pixel-corner mx-auto max-w-[46rem] bg-white/[0.03] px-6 py-16 text-center">
+        <p className={EYEBROW}>The board</p>
+        <h1 className="mt-4 font-pixel text-[24px] leading-[1.15] uppercase sm:text-[32px]">
+          Notes to self
+        </h1>
+        <p className="mx-auto mt-6 max-w-[44ch] font-garamond text-[17px] leading-[1.5] opacity-65">
+          The board is written by the desk rather than by contributors, so
+          there&rsquo;s nothing here for you to edit. Your own writing is under{" "}
+          <Link
+            href="/dashboard"
+            className="underline decoration-[color:var(--cyan)] decoration-2 underline-offset-4 transition-colors hover:text-[color:var(--cyan)]"
+          >
+            my pieces
+          </Link>
+          .
+        </p>
+      </div>
+    );
+  }
+
   const rows = await listNoteRows();
 
   const notes: EditableNote[] = rows.map((row) => ({

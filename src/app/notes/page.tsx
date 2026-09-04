@@ -12,7 +12,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Notes — Glitch Decoded",
   description:
-    "The board. Pin the thing you do not want to lose to the scroll — it stays in your browser and goes nowhere else.",
+    "The board: short notes worth keeping where the scroll cannot take them, written at the desk and pinned here.",
 };
 
 export default async function NotesPage() {
@@ -24,7 +24,7 @@ export default async function NotesPage() {
         <PageMasthead
           eyebrow="The board"
           title="Notes"
-          dek="The one thing this site remembers. Write down what you would rather not lose to the scroll — it is kept in your browser, and it never reaches us."
+          dek="The things worth writing down and keeping where the scroll cannot take them. Short, unsigned mostly, and meant for whoever needs them."
           rule={false}
         />
 
