@@ -113,21 +113,58 @@ export default function RootLayout({ children, modal }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {/* Diagnostics. A classic inline script, so it reports even when the
             React bundle fails to evaluate or hydrate. Silent unless something
-            throws; ?debug=1 also shows a live status readout. */}
+            throws; ?debug=1 also shows a live status readout.
+
+            The box is rendered here, hidden, rather than created the moment
+            something throws. It used to append itself to <html>, which dropped
+            a new node into the tree React was still hydrating — so any error at
+            all, a remote image that failed to load included, was turned into a
+            hydration failure by the very thing reporting it. Rendered up front,
+            the script only ever writes text into a node both trees already
+            agree on, and suppressHydrationWarning covers that text, which is
+            different on the server and here by its nature. */}
+        <pre
+          id="glitch-diag"
+          hidden
+          suppressHydrationWarning
+          style={{
+            position: "fixed",
+            zIndex: 99999,
+            left: 0,
+            right: 0,
+            top: 0,
+            margin: 0,
+            padding: 8,
+            font: "11px/1.4 ui-monospace, monospace",
+            color: "#fff",
+            background: "#b30f22",
+            whiteSpace: "pre-wrap",
+            maxHeight: "45vh",
+            overflow: "auto",
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: [
               "(function(){",
-              "var box;",
-              "function line(text){",
-              "  if(!box){",
-              "    box=document.createElement('pre');",
-              "    box.style.cssText='position:fixed;z-index:99999;left:0;right:0;top:0;margin:0;padding:8px;font:11px/1.4 ui-monospace,monospace;color:#fff;background:#b30f22;white-space:pre-wrap;max-height:45vh;overflow:auto';",
-              "    (document.documentElement||document.body).appendChild(box);",
-              "  }",
+              "var box=document.getElementById('glitch-diag');",
+              // Anything thrown before the box is parsed waits here rather
+              // than going missing, which is the whole point of the script.
+              "var pending=[];",
+              "function line(){",
+              "  if(!box) box=document.getElementById('glitch-diag');",
+              "  if(box && box.hidden) box.hidden=false;",
               "  return box;",
               "}",
-              "function log(text){ line().appendChild(document.createTextNode(text + String.fromCharCode(10))); }",
+              "function log(text){",
+              "  var b=line();",
+              "  if(!b){ pending.push(text); return; }",
+              "  b.appendChild(document.createTextNode(text + String.fromCharCode(10)));",
+              "}",
+              "document.addEventListener('DOMContentLoaded', function(){",
+              "  var q=pending.splice(0);",
+              "  for(var i=0;i<q.length;i++) log(q[i]);",
+              "});",
               "window.addEventListener('error', function(e){",
               "  log('ERROR: ' + (e.message || e.error) + '  @ ' + (e.filename||'?') + ':' + (e.lineno||'?'));",
               "}, true);",
@@ -138,6 +175,7 @@ export default function RootLayout({ children, modal }: LayoutProps<"/">) {
               "  setInterval(function(){",
               "    var s = window.__glitch;",
               "    var b = line();",
+              "    if(!b) return;",
               "    b.setAttribute('data-status','1');",
               "    var rm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;",
               "    var rail = document.querySelector('.note-rail-track') ? 'autoplay' :",
