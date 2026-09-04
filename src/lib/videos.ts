@@ -8,9 +8,9 @@
  * state for an archive entry nobody has digitised yet.
  *
  * Thumbnails come from YouTube's still server, so a linked reel shows its own
- * frame. The player itself is only built when a reader presses play, and it is
- * the cookie-free host — so nothing sets a cookie or starts a session until
- * somebody actually watches something.
+ * frame, and that still sits under the player while it loads. The host is the
+ * cookie-free one — but a linked reel now starts itself, muted, so it is
+ * reached on load rather than when somebody presses play.
  */
 export type Reel = {
   id: string;
@@ -140,10 +140,19 @@ export function thumbnailSrc(id: string): string {
   return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 }
 
-/** The cookie-free player, only ever built after the reader presses play. */
+/**
+ * The cookie-free player. Built as soon as a linked reel is on screen, so the
+ * set starts running the way a set does.
+ *
+ * Muted because it has to be: every browser refuses to autoplay a video with
+ * sound until the reader has interacted with the page, and refuses silently —
+ * an unmuted autoplay does not error, it simply sits on the first frame. The
+ * reader unmutes from the player's own control.
+ */
 export function embedSrc(id: string): string {
   const params = new URLSearchParams({
     autoplay: "1",
+    mute: "1",
     rel: "0",
     modestbranding: "1",
     playsinline: "1",

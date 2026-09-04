@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { type Reel, embedSrc, thumbnailSrc, youtubeId } from "@/lib/videos";
+import { type Reel, embedSrc, thumbnailSrc, watchUrl, youtubeId } from "@/lib/videos";
 
 /**
  * Archive footage of philosophers talking about the mind, on the same graphite
@@ -17,8 +17,9 @@ import { type Reel, embedSrc, thumbnailSrc, youtubeId } from "@/lib/videos";
  *
  * The reels are the desk's, the same ones the video library plays, so a link
  * pasted on /dashboard/reels reaches both. A reel with a link shows its own
- * still and can be played here; one without keeps its title card and reads as
- * untransferred, which is the honest state for an archive nobody has digitised.
+ * still and starts itself here, muted, the way a set that is already on does;
+ * one without keeps its title card and reads as untransferred, which is the
+ * honest state for an archive nobody has digitised.
  */
 /** Untuned snow. Also the whole picture for the beat after a channel change. */
 function Static({ opacity }: { opacity: number }) {
@@ -120,7 +121,6 @@ export default function ScreeningRoom({
 }) {
   const [current, setCurrent] = useState(0);
   const [tuning, setTuning] = useState(false);
-  const [playing, setPlaying] = useState(false);
   // The desk can shorten the programme between renders, so the index is
   // read defensively rather than trusted to still point at a reel.
   const reel = reels[current] ?? reels[0];
@@ -134,7 +134,6 @@ export default function ScreeningRoom({
   const select = (i: number) => {
     if (i === current) return;
     if (timer.current) clearTimeout(timer.current);
-    setPlaying(false);
     setTuning(true);
     setCurrent(i);
     timer.current = setTimeout(() => setTuning(false), 260);
@@ -215,7 +214,11 @@ export default function ScreeningRoom({
               <div
                 className={`reel-pic relative aspect-[16/10] w-full ${inStage ? "max-h-[46lvh]" : ""}`}
               >
-                {playing && id ? (
+                {/* The still sits under the player, so it is what shows
+                    while the iframe loads rather than a black frame. */}
+                {id ? <Still id={id} /> : <TitleCard reel={reel} index={current} />}
+
+                {id ? (
                   <iframe
                     key={reel.id}
                     className="absolute inset-0 size-full"
@@ -225,14 +228,14 @@ export default function ScreeningRoom({
                     referrerPolicy="strict-origin-when-cross-origin"
                     allowFullScreen
                   />
-                ) : id ? (
-                  <Still id={id} />
-                ) : (
-                  <TitleCard reel={reel} index={current} />
-                )}
+                ) : null}
 
-                <Static opacity={tuning ? 0.9 : 0.07} />
-                <Tube />
+                {id ? null : (
+                  <>
+                    <Static opacity={tuning ? 0.9 : 0.07} />
+                    <Tube />
+                  </>
+                )}
 
                 {/* Corner marker, the way a broadcast stamps its own picture. */}
                 <span className="pointer-events-none absolute top-3 left-4 flex items-center gap-2 font-arial text-[9px] font-bold tracking-[0.24em] uppercase opacity-55 sm:top-4 sm:left-5">
@@ -257,13 +260,14 @@ export default function ScreeningRoom({
               </span>
 
               {id ? (
-                <button
-                  type="button"
-                  onClick={() => setPlaying(true)}
-                  className="pixel-corner-sm flex shrink-0 cursor-pointer items-center gap-2 bg-white/15 px-4 py-2 font-arial text-[10px] font-bold tracking-[0.2em] uppercase transition-colors hover:bg-white hover:text-black"
+                <a
+                  href={watchUrl(id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="pixel-corner-sm flex shrink-0 items-center gap-2 bg-white/15 px-4 py-2 font-arial text-[10px] font-bold tracking-[0.2em] uppercase transition-colors hover:bg-white hover:text-black"
                 >
-                  <span aria-hidden>▶</span> Play
-                </button>
+                  Watch on YouTube <span aria-hidden>↗</span>
+                </a>
               ) : (
                 <span className="pixel-corner-sm shrink-0 bg-white/[0.06] px-4 py-2 font-arial text-[9px] font-bold tracking-[0.2em] whitespace-nowrap uppercase opacity-45">
                   Print not transferred

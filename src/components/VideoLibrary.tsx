@@ -14,10 +14,12 @@ import {
  * The library, played through the same set the home page uses: a CRT with
  * scanlines, a roll bar and untuned static, and a printed programme beside it.
  *
- * A linked reel shows its own YouTube still on its card; an unlinked one falls
- * back to the pixel title card, which is the honest picture of an archive entry
- * nobody has digitised. The player is only built when someone presses play, and
- * it is the cookie-free host, so nothing starts a session until it is watched.
+ * A linked reel plays itself, muted, the moment it is on screen; its own
+ * YouTube still sits under the player, which is what shows while the iframe is
+ * loading and on any browser that declines to start it. An unlinked reel falls
+ * back to the pixel title card, the honest picture of an archive entry nobody
+ * has digitised. The host is the cookie-free one, but note that a linked reel
+ * now reaches it on load rather than on a press.
  */
 
 /** Untuned snow. Also the whole picture for the beat after a channel change. */
@@ -139,7 +141,6 @@ function Still({ reel, id, index }: { reel: Reel; id: string; index: number }) {
 
 export default function VideoLibrary({ reels }: { reels: Reel[] }) {
   const [current, setCurrent] = useState(0);
-  const [playing, setPlaying] = useState(false);
   const [tuning, setTuning] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -150,7 +151,6 @@ export default function VideoLibrary({ reels }: { reels: Reel[] }) {
   const select = (index: number) => {
     if (index === current) return;
     setCurrent(index);
-    setPlaying(false);
     setTuning(true);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setTuning(false), 260);
@@ -174,7 +174,16 @@ export default function VideoLibrary({ reels }: { reels: Reel[] }) {
           {/* 16/9 is what the reels actually are, so a player fills the frame
               instead of sitting letterboxed inside a 16/10 one. */}
           <div className="relative aspect-video w-full">
-            {playing && id ? (
+            {/* The still sits under the player rather than beside it in a
+                branch: it is then what the reader sees while the iframe loads,
+                instead of a black hole where the picture goes. */}
+            {id ? (
+              <Still reel={reel} id={id} index={current} />
+            ) : (
+              <TitleCard reel={reel} index={current} />
+            )}
+
+            {id ? (
               <iframe
                 key={reel.id}
                 className="absolute inset-0 size-full"
@@ -186,33 +195,8 @@ export default function VideoLibrary({ reels }: { reels: Reel[] }) {
               />
             ) : (
               <>
-                {/* The still is the picture when there is one; the pixel card
-                    stays the honest face of a reel nobody has transferred. */}
-                {id ? (
-                  <Still reel={reel} id={id} index={current} />
-                ) : (
-                  <TitleCard reel={reel} index={current} />
-                )}
                 <Static opacity={tuning ? 0.9 : 0.07} />
                 <Tube />
-
-                {/* Play sits over the card rather than under it: pressing it is
-                    the moment the third party is allowed in. */}
-                {id ? (
-                  <button
-                    type="button"
-                    onClick={() => setPlaying(true)}
-                    className="group absolute inset-0 flex items-center justify-center outline-none"
-                    aria-label={`Play ${reel.speaker}, ${reel.source} ${reel.year}`}
-                  >
-                    <span
-                      className="pixel-corner flex size-[74px] items-center justify-center bg-black/55 text-[22px] backdrop-blur-sm transition-colors group-hover:bg-white group-focus-visible:bg-white group-hover:text-black group-focus-visible:text-black"
-                      style={{ color: reel.hue }}
-                    >
-                      <span aria-hidden>▶</span>
-                    </span>
-                  </button>
-                ) : null}
               </>
             )}
           </div>
