@@ -14,6 +14,12 @@ import { categoryName } from "@/lib/categories";
  * 404s here even for its own author — the editor is where they read their draft.
  */
 
+/**
+ * Refreshed on a timer. Without it a piece is rendered once and cached for
+ * good, so an edit the desk makes after publication never reaches a reader.
+ */
+export const revalidate = 300;
+
 /** Trims to a whole word rather than mid-syllable, for the search snippet. */
 function truncate(text: string, max: number): string {
   const clean = text.replace(/\s+/g, " ").trim();

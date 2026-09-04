@@ -105,6 +105,34 @@ export async function countAsks(
   return res.total;
 }
 
+/**
+ * A per-writer ceiling on how often the model may be called, in one window.
+ *
+ * Counted out of the stored messages rather than a map in memory: this runs on
+ * serverless instances that come and go, and an in-process counter there is a
+ * limit in name only. The one hole is that clearing a thread deletes the rows
+ * it was counting, which resets the window — acceptable for a guard against a
+ * stuck retry loop, and worth knowing before it is relied on as a spend cap.
+ */
+export const RATE_MAX = 30;
+export const RATE_WINDOW_MS = 10 * 60 * 1000;
+
+export async function asksInWindow(userId: string): Promise<number> {
+  const since = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
+  const res = await db().listRows<CompanionRow>({
+    databaseId: DATABASE_ID,
+    tableId: TABLES.companion,
+    queries: [
+      Query.equal("userId", userId),
+      Query.equal("role", "user"),
+      Query.greaterThan("$createdAt", since),
+      // Only the total is read; a page of one keeps the response small.
+      Query.limit(1),
+    ],
+  });
+  return res.total;
+}
+
 export async function appendMessage(input: {
   userId: string;
   articleId: string | null;

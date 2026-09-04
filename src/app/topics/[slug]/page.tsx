@@ -7,9 +7,8 @@ import Footer from "@/components/Footer";
 import PaperTear from "@/components/PaperTear";
 import TopicSprite from "@/components/TopicSprite";
 import type { Article } from "@/lib/archive";
+import { rowToArticle } from "@/lib/articles/listing";
 import { listByTopic } from "@/lib/articles/queries";
-import type { ArticleRow } from "@/lib/articles/types";
-import type { CategorySlug } from "@/lib/categories";
 import { TOPICS, topicBySlug } from "@/lib/topics";
 
 /**
@@ -48,19 +47,6 @@ export async function generateMetadata(
   };
 }
 
-/** The card's shape, which the archive defines and Appwrite rows have to meet. */
-function toCard(row: ArticleRow): Article {
-  return {
-    slug: row.slug,
-    category: row.category as CategorySlug,
-    title: row.title,
-    dek: row.dek ?? "",
-    author: row.authorName,
-    date: (row.publishedAt ?? row.$createdAt).slice(0, 10),
-    minutes: row.minutes,
-  };
-}
-
 export default async function TopicPage(props: PageProps<"/topics/[slug]">) {
   const { slug } = await props.params;
   const topic = topicBySlug(slug);
@@ -70,7 +56,7 @@ export default async function TopicPage(props: PageProps<"/topics/[slug]">) {
   // the same tolerance the rest of the front of the site has.
   let articles: Article[] = [];
   try {
-    articles = (await listByTopic(topic.slug)).map(toCard);
+    articles = (await listByTopic(topic.slug)).map(rowToArticle);
   } catch {
     articles = [];
   }

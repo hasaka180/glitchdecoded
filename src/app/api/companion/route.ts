@@ -16,9 +16,11 @@ import {
 import { isCompanionMode, type CompanionMode } from "@/lib/ai/modes";
 import {
   appendMessage,
+  asksInWindow,
   countAsks,
   listThread,
   MAX_ASKS,
+  RATE_MAX,
   REPLAY_WINDOW,
 } from "@/lib/ai/thread";
 import { getArticleById } from "@/lib/articles/queries";
@@ -50,27 +52,6 @@ const MAX_MESSAGE = 6_000;
 
 /** Matches the editor's own ceiling; `foldDraft` handles anything near it. */
 const MAX_BODY = 120_000;
-
-/**
- * A crude ceiling, per signed-in writer, on a route that spends real money.
- *
- * In memory, so it resets on deploy and is counted per instance — this is a
- * guard against a stuck retry loop or one enthusiastic account, not a billing
- * control. A real limit belongs in front of the process.
- */
-const RATE_MAX = 30;
-const RATE_WINDOW_MS = 10 * 60 * 1000;
-const recent = new Map<string, number[]>();
-
-function overRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const hits = (recent.get(userId) ?? []).filter(
-    (at) => now - at < RATE_WINDOW_MS,
-  );
-  hits.push(now);
-  recent.set(userId, hits);
-  return hits.length > RATE_MAX;
-}
 
 function frame(payload: Record<string, unknown>): Uint8Array {
   return new TextEncoder().encode(`${JSON.stringify(payload)}\n`);
@@ -106,7 +87,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (overRateLimit(user.id)) {
+  // Counted out of the database so the ceiling survives a cold start and holds
+  // across every instance serving this deployment.
+  if ((await asksInWindow(user.id)) >= RATE_MAX) {
     return fail("That's a lot of questions at once. Give it a few minutes.", 429);
   }
 

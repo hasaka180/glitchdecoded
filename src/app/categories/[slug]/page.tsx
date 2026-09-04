@@ -6,8 +6,16 @@ import ArticleCard, { ArticleGrid } from "@/components/ArticleCard";
 import Footer from "@/components/Footer";
 import PageMasthead from "@/components/PageMasthead";
 import PaperTear from "@/components/PaperTear";
-import { articlesInCategory } from "@/lib/archive";
+import { articlesInCategory } from "@/lib/articles/listing";
 import { CATEGORIES, categoryBySlug } from "@/lib/categories";
+
+/**
+ * Refreshed on a timer rather than frozen at build.
+ *
+ * This page now lists what the desk has published as well as the archive, and
+ * a piece nobody can find is the same as one nobody wrote.
+ */
+export const revalidate = 300;
 
 /** Six known slugs, so every category page is prerendered rather than resolved. */
 export function generateStaticParams() {
@@ -34,7 +42,7 @@ export default async function CategoryPage(
   const category = categoryBySlug(slug);
   if (!category) notFound();
 
-  const articles = articlesInCategory(category.slug);
+  const articles = await articlesInCategory(category.slug);
   const [lead, ...rest] = articles;
   const others = CATEGORIES.filter((c) => c.slug !== category.slug);
 

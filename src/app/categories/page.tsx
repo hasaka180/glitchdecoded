@@ -5,8 +5,16 @@ import { ArticleGrid } from "@/components/ArticleCard";
 import Footer from "@/components/Footer";
 import PageMasthead from "@/components/PageMasthead";
 import PaperTear from "@/components/PaperTear";
-import { articlesInCategory, recentArticles } from "@/lib/archive";
+import { countByCategory, recentArticles } from "@/lib/articles/listing";
 import { CATEGORIES } from "@/lib/categories";
+
+/**
+ * Refreshed on a timer rather than frozen at build.
+ *
+ * This page now lists what the desk has published as well as the archive, and
+ * a piece nobody can find is the same as one nobody wrote.
+ */
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Categories — Glitch Decoded",
@@ -19,7 +27,10 @@ export const metadata: Metadata = {
  * rather than a scroll — a page you arrive at deliberately does not need to be
  * dragged, and a grid shows all six without a single gesture.
  */
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
+  // One round trip covers both: `listing` memoises the published rows per pass.
+  const [counts, recent] = await Promise.all([countByCategory(), recentArticles(9)]);
+
   return (
     <>
       <main className="flex-1">
@@ -36,7 +47,7 @@ export default function CategoriesPage() {
           <div className="mx-auto w-full max-w-[1500px] px-5 sm:px-10">
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {CATEGORIES.map((category) => {
-                const count = articlesInCategory(category.slug).length;
+                const count = counts[category.slug] ?? 0;
 
                 return (
                   <li key={category.slug}>
@@ -98,7 +109,7 @@ export default function CategoriesPage() {
               </h2>
 
               <div className="mt-10">
-                <ArticleGrid articles={recentArticles(9)} />
+                <ArticleGrid articles={recent} />
               </div>
             </div>
           </div>
