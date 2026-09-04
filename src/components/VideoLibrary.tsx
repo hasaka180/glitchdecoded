@@ -99,6 +99,44 @@ function TitleCard({ reel, index }: { reel: Reel; index: number }) {
   );
 }
 
+/**
+ * The reel's own frame, for a reel that has one.
+ *
+ * `hqdefault` is a 4:3 still with the pillarbox baked in, so it is cropped to
+ * fill rather than fitted — fitting it would print YouTube's black bars inside
+ * a tube that already has its own. The card's top row is kept over the picture,
+ * because the reel number and the stock are the set's furniture rather than the
+ * title card's.
+ */
+function Still({ reel, id, index }: { reel: Reel; id: string; index: number }) {
+  return (
+    <>
+      {/* A YouTube still on whatever host the CDN serves; next/image would
+          need it configured as a remote host. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={thumbnailSrc(id)}
+        alt=""
+        className="absolute inset-0 size-full object-cover"
+      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-6 p-4 sm:p-9">
+        <p
+          className="font-mono text-[10px] tracking-[0.3em] uppercase"
+          style={{ color: reel.hue, textShadow: "0 1px 6px rgba(0,0,0,0.9)" }}
+        >
+          Reel {String(index + 1).padStart(2, "0")}
+        </p>
+        <p
+          className="font-mono text-[10px] tracking-[0.24em] uppercase opacity-70"
+          style={{ textShadow: "0 1px 6px rgba(0,0,0,0.9)" }}
+        >
+          {reel.stock}
+        </p>
+      </div>
+    </>
+  );
+}
+
 export default function VideoLibrary({ reels }: { reels: Reel[] }) {
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -148,7 +186,13 @@ export default function VideoLibrary({ reels }: { reels: Reel[] }) {
               />
             ) : (
               <>
-                <TitleCard reel={reel} index={current} />
+                {/* The still is the picture when there is one; the pixel card
+                    stays the honest face of a reel nobody has transferred. */}
+                {id ? (
+                  <Still reel={reel} id={id} index={current} />
+                ) : (
+                  <TitleCard reel={reel} index={current} />
+                )}
                 <Static opacity={tuning ? 0.9 : 0.07} />
                 <Tube />
 

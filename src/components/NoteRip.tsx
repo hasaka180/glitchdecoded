@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { Note } from "@/lib/notes/seed";
+import type { Reel } from "@/lib/videos";
 
 import { useReducedMotion } from "@/lib/useReducedMotion";
 
@@ -67,7 +68,13 @@ const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
  * natural height, the horizontal PaperTear does the transition, and the board
  * follows.
  */
-export default function NoteRip({ seed }: { seed: Note[] }) {
+export default function NoteRip({
+  seed,
+  reels,
+}: {
+  seed: Note[];
+  reels: Reel[];
+}) {
   const ref = useRef<HTMLDivElement | null>(null);
   const reduced = useReducedMotion();
   const [progress, setProgress] = useState(0);
@@ -103,7 +110,7 @@ export default function NoteRip({ seed }: { seed: Note[] }) {
   if (!staged) {
     return (
       <>
-        <ScreeningRoom />
+        <ScreeningRoom reels={reels} />
         <PaperTear sheet="var(--graphite)" ground="var(--paper)" />
         <NoteWall seed={seed} />
       </>
@@ -133,7 +140,7 @@ export default function NoteRip({ seed }: { seed: Note[] }) {
             filter: rip > 0 ? "drop-shadow(-6px 0 18px rgba(0,0,0,0.5))" : undefined,
           }}
         >
-          <ScreeningRoom inStage />
+          <ScreeningRoom reels={reels} inStage />
         </div>
 
         {/* shreds coming away with the torn edge */}

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { type Reel, embedSrc, thumbnailSrc, youtubeId } from "@/lib/videos";
+
 /**
  * Archive footage of philosophers talking about the mind, on the same graphite
  * ground as the picks above — printed on stock this time, because this is the
@@ -13,94 +15,11 @@ import { useEffect, useRef, useState } from "react";
  * and changing reel snaps the tube to static for a beat before the next card
  * lands. Beside it the reels are listed like a printed programme.
  *
- * These are real broadcasts. To play one, drop the file in
- * `public/assets/screening/` and set `src` (and `poster`, if there is a still);
- * a reel with no `src` stays on its title card and reads as untransferred,
- * which is the honest state for an archive that hasn't been digitised.
+ * The reels are the desk's, the same ones the video library plays, so a link
+ * pasted on /dashboard/reels reaches both. A reel with a link shows its own
+ * still and can be played here; one without keeps its title card and reads as
+ * untransferred, which is the honest state for an archive nobody has digitised.
  */
-type Reel = {
-  id: string;
-  /** Who is speaking. */
-  speaker: string;
-  /** What the reel is about, in the magazine's voice — not a quotation. */
-  line: string;
-  /** Where the footage comes from. */
-  source: string;
-  year: string;
-  /** Film stock marker, for the strip under the picture. */
-  stock: string;
-  /** Accent on the tube — lit, because it sits on black. */
-  hue: string;
-  /** The same accent taken down for the graphite ground, where the lit one
-      would wash out. Matches the darker family the topic field uses. */
-  inkHue: string;
-  src?: string;
-  poster?: string;
-};
-
-const REELS: Reel[] = [
-  {
-    id: "jung",
-    speaker: "Carl Jung",
-    line: "On the part of a person that goes unlived, and what it costs to keep it that way.",
-    source: "Face to Face, BBC",
-    year: "1959",
-    stock: "16mm · b/w",
-    hue: "#d8b06a",
-    inkHue: "#8a5a12",
-  },
-  {
-    id: "watts",
-    speaker: "Alan Watts",
-    line: "On anxiety — and the security we keep chasing as the thing producing it.",
-    source: "KQED broadcasts",
-    year: "1960",
-    stock: "16mm · b/w",
-    hue: "#6fa8ef",
-    inkHue: "#2f47a0",
-  },
-  {
-    id: "frankl",
-    speaker: "Viktor Frankl",
-    line: "On meaning as the one thing that survives a life it was not given.",
-    source: "Recorded lecture",
-    year: "1972",
-    stock: "video · colour",
-    hue: "#e08a3c",
-    inkHue: "#a4541a",
-  },
-  {
-    id: "fromm",
-    speaker: "Erich Fromm",
-    line: "On loneliness inside a society that calls itself well.",
-    source: "The Mike Wallace Interview",
-    year: "1958",
-    stock: "16mm · b/w",
-    hue: "#a98cf0",
-    inkHue: "#4a3a8e",
-  },
-  {
-    id: "krishnamurti",
-    speaker: "J. Krishnamurti",
-    line: "On fear, and the difficulty of watching your own mind without flinching.",
-    source: "Ojai talks",
-    year: "1974",
-    stock: "16mm · colour",
-    hue: "#8fce5a",
-    inkHue: "#2f6b3a",
-  },
-  {
-    id: "russell",
-    speaker: "Bertrand Russell",
-    line: "On the habits of thought that make a person miserable and pass for wisdom.",
-    source: "Face to Face, BBC",
-    year: "1959",
-    stock: "16mm · b/w",
-    hue: "#e8d24a",
-    inkHue: "#7a6410",
-  },
-];
-
 /** Untuned snow. Also the whole picture for the beat after a channel change. */
 function Static({ opacity }: { opacity: number }) {
   return (
@@ -146,14 +65,6 @@ function TitleCard({ reel, index }: { reel: Reel; index: number }) {
       className="crt-flicker absolute inset-0 flex flex-col items-center justify-center px-8 text-center"
       style={{ color: reel.hue }}
     >
-      {reel.poster && (
-        <span
-          aria-hidden
-          className="absolute inset-0 bg-cover bg-center opacity-40"
-          style={{ backgroundImage: `url(${reel.poster})`, filter: "sepia(1) contrast(1.15)" }}
-        />
-      )}
-
       <span className="relative font-arial text-[9px] font-bold tracking-[0.42em] uppercase opacity-60 sm:text-[10px]">
         Reel {String(index + 1).padStart(2, "0")}
       </span>
@@ -175,17 +86,45 @@ function TitleCard({ reel, index }: { reel: Reel; index: number }) {
   );
 }
 
+/** The reel's own frame, cropped to fill so YouTube's pillarbox never prints
+    inside a tube that has its own. */
+function Still({ id }: { id: string }) {
+  return (
+    // A YouTube still on whatever host the CDN serves; next/image would need
+    // it configured as a remote host.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={thumbnailSrc(id)}
+      alt=""
+      className="absolute inset-0 size-full object-cover"
+    />
+  );
+}
+
+/** Small counts read as words here; anything larger falls back to digits. */
+const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven",
+  "eight", "nine", "ten", "eleven", "twelve"];
+
 /**
  * `inStage` is the torn-page role: the section is pinned to one viewport by
  * NoteRip and clipped to the tear, so it drops its section break, tightens its
  * rhythm and caps the picture against the viewport's height instead of running
  * at its natural length.
  */
-export default function ScreeningRoom({ inStage = false }: { inStage?: boolean } = {}) {
+export default function ScreeningRoom({
+  reels,
+  inStage = false,
+}: {
+  reels: Reel[];
+  inStage?: boolean;
+}) {
   const [current, setCurrent] = useState(0);
   const [tuning, setTuning] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const reel = REELS[current];
+  // The desk can shorten the programme between renders, so the index is
+  // read defensively rather than trusted to still point at a reel.
+  const reel = reels[current] ?? reels[0];
+  const id = reel ? youtubeId(reel.url) : null;
 
   /* The static burst on a channel change. Cleared on unmount so a fast run
      through the rail can't leave the tube stuck on snow. */
@@ -200,6 +139,26 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
     setCurrent(i);
     timer.current = setTimeout(() => setTuning(false), 260);
   };
+
+  // An empty table would otherwise render a set with no picture in it.
+  if (!reel) return null;
+
+  // The count and the span were printed as "Six broadcasts between 1958 and
+  // 1974" — true when the reels lived in this file, and a lie the first time
+  // somebody adds one at the desk.
+  const years = reels
+    .map((r) => Number.parseInt(r.year, 10))
+    .filter((y) => Number.isFinite(y));
+  const span = years.length
+    ? Math.min(...years) === Math.max(...years)
+      ? ` from ${Math.min(...years)}`
+      : ` between ${Math.min(...years)} and ${Math.max(...years)}`
+    : "";
+  const count = WORDS[reels.length] ?? String(reels.length);
+  const standfirst =
+    `${count.charAt(0).toUpperCase()}${count.slice(1)} broadcast` +
+    `${reels.length === 1 ? "" : "s"}${span}, in which people who thought for ` +
+    "a living were asked, on camera, how to bear being alive.";
 
   return (
     <section
@@ -236,8 +195,7 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
             </h2>
           </div>
           <p className="max-w-[34ch] font-garamond text-[16px] leading-[1.5] opacity-70 sm:text-right">
-            Six broadcasts between 1958 and 1974, in which people who thought
-            for a living were asked, on camera, how to bear being alive.
+            {standfirst}
           </p>
         </header>
 
@@ -257,16 +215,18 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
               <div
                 className={`reel-pic relative aspect-[16/10] w-full ${inStage ? "max-h-[46lvh]" : ""}`}
               >
-                {playing && reel.src ? (
-                  <video
+                {playing && id ? (
+                  <iframe
                     key={reel.id}
-                    className="absolute inset-0 size-full object-cover"
-                    src={reel.src}
-                    poster={reel.poster}
-                    controls
-                    autoPlay
-                    playsInline
+                    className="absolute inset-0 size-full"
+                    src={embedSrc(id)}
+                    title={`${reel.speaker} — ${reel.source}, ${reel.year}`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
                   />
+                ) : id ? (
+                  <Still id={id} />
                 ) : (
                   <TitleCard reel={reel} index={current} />
                 )}
@@ -296,7 +256,7 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
                 </span>
               </span>
 
-              {reel.src ? (
+              {id ? (
                 <button
                   type="button"
                   onClick={() => setPlaying(true)}
@@ -319,7 +279,7 @@ export default function ScreeningRoom({ inStage = false }: { inStage?: boolean }
               the picture alone decides how tall the pair is. */}
           <div className="lg:relative">
             <ul className="reel-list scrollbar-none -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 lg:absolute lg:inset-0 lg:mx-0 lg:flex-col lg:snap-none lg:overflow-x-hidden lg:overflow-y-auto lg:px-0">
-              {REELS.map((item, i) => {
+              {reels.map((item, i) => {
                 const on = i === current;
                 return (
                   <li key={item.id} className="w-[16rem] shrink-0 snap-start lg:w-auto">
