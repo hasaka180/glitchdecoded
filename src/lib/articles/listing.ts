@@ -30,6 +30,9 @@ export function rowToArticle(row: ArticleRow): Article {
     author: row.authorName,
     date: (row.publishedAt ?? row.$createdAt).slice(0, 10),
     minutes: row.minutes,
+    ...(row.coverImageUrl
+      ? { image: { url: row.coverImageUrl, alt: row.coverAlt ?? "" } }
+      : {}),
   };
 }
 

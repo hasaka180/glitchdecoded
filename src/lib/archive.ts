@@ -25,6 +25,12 @@ export type Article = {
   minutes: number;
   /** Set on the one piece per category that leads the page. */
   lead?: boolean;
+  /**
+   * The cover the desk uploaded, when there is one. Without it the card falls
+   * back to a frame of the category's sprite strip, which is what every
+   * archive placeholder has always used.
+   */
+  image?: { url: string; alt: string };
 };
 
 export const ARTICLES: Article[] = [

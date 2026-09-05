@@ -54,18 +54,37 @@ export default function ArticleCard({
         href={articleHref(article)}
         scroll={false}
         className={`group pixel-corner relative flex h-full flex-col justify-end overflow-hidden bg-[#0b0a08] text-[color:var(--bone)] transition-transform duration-300 hover:-translate-y-1 ${
-          lead ? "aspect-[16/10] p-6 sm:p-9" : "aspect-[4/5] p-5"
+          lead
+            ? "aspect-[16/10] p-6 sm:aspect-[21/9] sm:max-h-[32rem] sm:p-9"
+            : "aspect-[4/5] p-5"
         }`}
       >
-        {/* the still, one frame of the category strip */}
-        <span
-          aria-hidden
-          className="card-still absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]"
-          style={{
-            backgroundImage: `url(/assets/categories/${article.category}.png)`,
-            backgroundPositionX: `${(frameFor(article.slug) / (FRAMES - 1)) * 100}%`,
-          }}
-        />
+        {/* The cover when the desk gave the piece one; otherwise the still,
+            one frame of the category strip. */}
+        {article.image ? (
+          // A remote storage URL, which next/image would need every host
+          // configured for in advance.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={article.image.url}
+            // Empty on purpose: the link already carries the headline, the
+            // standfirst and the byline, so describing the picture here would
+            // announce the card twice. Its description is on the piece itself,
+            // where the image is the subject rather than the decoration.
+            alt=""
+            className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            loading="lazy"
+          />
+        ) : (
+          <span
+            aria-hidden
+            className="card-still absolute inset-0 transition-transform duration-500 group-hover:scale-[1.04]"
+            style={{
+              backgroundImage: `url(/assets/categories/${article.category}.png)`,
+              backgroundPositionX: `${(frameFor(article.slug) / (FRAMES - 1)) * 100}%`,
+            }}
+          />
+        )}
 
         {/* darkest where the copy sits, so the type never fights the art */}
         <span
