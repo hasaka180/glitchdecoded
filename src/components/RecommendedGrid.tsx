@@ -1,91 +1,38 @@
 import Link from "next/link";
 
+import { PICKS, type Pick } from "@/lib/recommended";
+
 /**
  * Picks surfaced from the topics above, on the same graphite ground as the
  * topic field. Cards are black with a still image and a fade — no coloured
  * ground; the hue only reaches the label and the top rule.
  */
-type Pick = {
-  slug: string;
-  title: string;
-  dek: string;
-  category: string;
-  /** The topic from the field above that this pick answers to. */
-  from: string;
-  minutes: number;
-  /** Accent for the label and the card's top rule. */
-  hue: string;
-  /**
-   * Card image. Cropped to `cover`, so any aspect works — swap these files for
-   * photographs and nothing here has to change.
-   */
-  image: string;
-};
 
-const PICKS: Pick[] = [
-  {
-    slug: "loneliness-that-doesnt-look-like-loneliness",
-    title: "The loneliness that doesn't look like loneliness",
-    dek: "We built a century of ways to stay in touch and quietly lost the practice of being known. What went missing, and what it takes to get it back.",
-    category: "Deep dives",
-    from: "Loneliness",
-    minutes: 14,
-    hue: "#a98cf0",
-    image: "/assets/recommended/loneliness-that-doesnt-look-like-loneliness.png",
-  },
-  {
-    slug: "your-calendar-is-a-confession",
-    title: "Your calendar is a confession",
-    dek: "What a life values isn't in the mission statement. It's in the diary.",
-    category: "Reality check",
-    from: "Time",
-    minutes: 6,
-    hue: "#e08a3c",
-    image: "/assets/recommended/your-calendar-is-a-confession.png",
-  },
-  {
-    slug: "ambition-is-envy-with-a-resume",
-    title: "Ambition is envy with a résumé",
-    dek: "The feeling we deny and the drive we admire turn out to be the same engine.",
-    category: "Unpopular",
-    from: "Envy",
-    minutes: 8,
-    hue: "#e8d24a",
-    image: "/assets/recommended/ambition-is-envy-with-a-resume.png",
-  },
-  {
-    slug: "the-friendships-nobody-ends",
-    title: "The friendships nobody ends",
-    dek: "They are rarely broken off. They simply stop being maintained.",
-    category: "Human",
-    from: "Friendship",
-    minutes: 5,
-    hue: "#6fa8ef",
-    image: "/assets/recommended/the-friendships-nobody-ends.png",
-  },
-  {
-    slug: "nothing-in-a-forest-is-in-a-hurry",
-    title: "Nothing in a forest is in a hurry",
-    dek: "On growth that never announces itself, and why we distrust it.",
-    category: "Nature",
-    from: "Change",
-    minutes: 7,
-    hue: "#8fce5a",
-    image: "/assets/recommended/nothing-in-a-forest-is-in-a-hurry.png",
-  },
-];
 
 /**
  * A still, cropped to fill whatever box it is given. `pixelated` keeps the
  * current art — a 132x176 still of the category sprite — crisp as it upscales;
  * drop it if these are replaced with photographs.
  */
-function CardImage({ image, className }: { image: string; className?: string }) {
+function CardImage({
+  image,
+  pixel,
+  className,
+}: {
+  image: string;
+  pixel: boolean;
+  className?: string;
+}) {
   return (
     <span
       aria-hidden
       className={`absolute inset-0 bg-cover bg-center ${className ?? ""}`}
-      style={{ backgroundImage: `url(${image})`, imageRendering: "pixelated" }}
+      style={{
+        backgroundImage: `url(${image})`,
+        // Only the site's own pixel art wants this. A photograph the desk
+        // uploaded would come out as blocks.
+        imageRendering: pixel ? "pixelated" : undefined,
+      }}
     />
   );
 }
@@ -132,8 +79,8 @@ function Minutes({ minutes }: { minutes: number }) {
   );
 }
 
-export default function RecommendedGrid() {
-  const [featured, ...rest] = PICKS;
+export default function RecommendedGrid({ picks = PICKS }: { picks?: Pick[] }) {
+  const [featured, ...rest] = picks;
 
   return (
     <section
@@ -172,10 +119,10 @@ export default function RecommendedGrid() {
               the copy sits on the black end of the fade. */}
           <li className="sm:col-span-2 lg:row-span-2">
             <a
-              href={`#${featured.slug}`}
+              href={featured.href}
               className="pixel-corner group relative flex h-full min-h-[28rem] flex-col justify-between overflow-hidden bg-black p-6 text-[color:var(--bone)] transition-transform duration-300 hover:-translate-y-1 sm:p-8"
             >
-              <CardImage image={featured.image} />
+              <CardImage image={featured.image} pixel={featured.pixel} />
               <Fade stops="rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0.22) 48%, rgba(0,0,0,0.55) 72%, rgba(0,0,0,0.78) 100%" />
               <TopRule hue={featured.hue} />
 
@@ -220,12 +167,12 @@ export default function RecommendedGrid() {
           {rest.map((pick) => (
             <li key={pick.slug}>
               <a
-                href={`#${pick.slug}`}
+                href={pick.href}
                 className="pixel-corner group relative flex h-full flex-col overflow-hidden bg-black text-[color:var(--bone)] transition-transform duration-300 hover:-translate-y-1"
               >
                 {/* the image keeps its own band; the copy sits on black under it */}
                 <span className="relative block aspect-[3/2] w-full overflow-hidden">
-                  <CardImage image={pick.image} />
+                  <CardImage image={pick.image} pixel={pick.pixel} />
                   <Fade stops="rgba(0,0,0,0.22) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.3) 80%, #000 100%" />
                 </span>
                 <TopRule hue={pick.hue} />

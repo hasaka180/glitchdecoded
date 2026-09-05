@@ -3,6 +3,9 @@ import "server-only";
 import { cache } from "react";
 
 import { ARTICLES, type Article } from "@/lib/archive";
+import { PICKS, type Pick } from "@/lib/recommended";
+import { categoryHue, categoryName } from "@/lib/categories";
+import { topicName } from "@/lib/topics";
 import { listPublished } from "@/lib/articles/queries";
 import type { ArticleRow } from "@/lib/articles/types";
 import type { CategorySlug } from "@/lib/categories";
@@ -44,13 +47,18 @@ export function rowToArticle(row: ArticleRow): Article {
  * An unreachable Appwrite returns nothing rather than throwing, so the archive
  * still renders and the page stays up.
  */
-const published = cache(async (): Promise<Article[]> => {
+const publishedRows = cache(async (): Promise<ArticleRow[]> => {
   try {
-    return (await listPublished(200)).map(rowToArticle);
+    return await listPublished(200);
   } catch {
     return [];
   }
 });
+
+/** The same set in the shape the cards were written for. */
+const published = cache(async (): Promise<Article[]> =>
+  (await publishedRows()).map(rowToArticle),
+);
 
 /** Published first, then any placeholder whose slug hasn't been taken over. */
 function merge(live: Article[], archive: Article[]): Article[] {
@@ -78,4 +86,37 @@ export async function countByCategory(): Promise<Record<string, number>> {
     counts[article.category] = (counts[article.category] ?? 0) + 1;
   }
   return counts;
+}
+
+/**
+ * The five under the topic field, newest first.
+ *
+ * The section's layout is one featured card and a 2x2, so it needs exactly
+ * five: published work fills it from the front and the shipped picks make up
+ * the difference, which is what keeps the grid whole on a site with two pieces
+ * on it. A pick whose slug has since been published is dropped rather than
+ * shown twice.
+ */
+export async function recommendedPicks(limit = 5): Promise<Pick[]> {
+  const live = (await publishedRows()).slice(0, limit).map(
+    (row): Pick => ({
+      slug: row.slug,
+      // Unlike the shipped picks, this one has a page behind it.
+      href: `/read/${row.slug}`,
+      title: row.title,
+      dek: row.dek ?? "",
+      category: categoryName(row.category),
+      // The reason line wants something true about the piece. The desk's first
+      // topic is that; the perspective is the fallback when nothing is tagged.
+      from: row.topics?.[0] ? topicName(row.topics[0]) : categoryName(row.category),
+      minutes: row.minutes,
+      hue: categoryHue(row.category),
+      image: row.coverImageUrl ?? `/assets/categories/${row.category}.png`,
+      // A cover is a photograph; the category art it falls back to is not.
+      pixel: !row.coverImageUrl,
+    }),
+  );
+
+  const taken = new Set(live.map((p) => p.slug));
+  return [...live, ...PICKS.filter((p) => !taken.has(p.slug))].slice(0, limit);
 }

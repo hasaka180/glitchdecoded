@@ -74,6 +74,31 @@ async function uniqueSlug(title: string, exceptId?: string): Promise<string> {
   return `${base}-${Date.now().toString(36)}`;
 }
 
+/**
+ * The slug for a piece about to be written.
+ *
+ * Recut when the stored slug no longer comes from the title, rather than when
+ * the title differs from the stored one — autosave writes the title without
+ * touching the slug, so by the time an explicit save or a submit runs the two
+ * titles always match and the old test never fired. A draft created as
+ * "Untitled" therefore went out at /read/untitled-6 however it was retitled.
+ *
+ * A published piece is never recut: changing it would break every link already
+ * shared. Collision suffixes survive, so "the-thing-2" is left alone.
+ */
+async function slugFor(
+  article: ArticleRow,
+  title: string,
+): Promise<string> {
+  if (article.status === "published") return article.slug;
+
+  const base = slugify(title);
+  const derived =
+    article.slug === base || article.slug.startsWith(`${base}-`);
+
+  return derived ? article.slug : uniqueSlug(title, article.$id);
+}
+
 /** Reads and bounds the editor fields shared by create, save and autosave. */
 function readFields(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim().slice(0, MAX_TITLE);
@@ -186,12 +211,7 @@ export async function saveArticle(
 
   await snapshot(article, user, "Manual save");
 
-  // The slug is only recut while the piece is unpublished. Changing it after
-  // publication would break every link already shared.
-  const slug =
-    article.status === "published" || fields.title === article.title
-      ? article.slug
-      : await uniqueSlug(fields.title, article.$id);
+  const slug = await slugFor(article, fields.title);
 
   await db().updateRow({
     databaseId: DATABASE_ID,
@@ -292,10 +312,7 @@ export async function submitForReview(
 
   await snapshot(article, user, "Submitted for review");
 
-  const slug =
-    article.status === "published" || title === article.title
-      ? article.slug
-      : await uniqueSlug(title, article.$id);
+  const slug = await slugFor(article, title);
 
   await db().updateRow({
     databaseId: DATABASE_ID,
