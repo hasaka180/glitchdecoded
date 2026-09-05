@@ -8,8 +8,8 @@ import { SOCIALS } from "./SocialLinks";
 /**
  * The sign-off. The board is the last thing the reader touches, so the page
  * tears one final time — the note paper lifting off the ink it started on — and
- * closes the way a broadcast does: masthead, what is on the channel, then
- * colour bars and a dead cursor.
+ * closes the way a broadcast does: masthead, what is on the channel, then a
+ * dead cursor.
  *
  * Every section link points at its route. The remaining placeholders (article
  * slugs, the social handles) are kept as bare anchors, so wiring them up later
@@ -23,15 +23,12 @@ import { SOCIALS } from "./SocialLinks";
 type Entry = {
   label: string;
   href: string;
-  /** Category accent, where the link carries one. */
-  hue?: string;
 };
 
-/** The six categories, in the rail's order and its colours. */
-const SECTIONS: Entry[] = CATEGORIES.map(({ name, slug, hue }) => ({
+/** The six categories, in the rail's order. */
+const SECTIONS: Entry[] = CATEGORIES.map(({ name, slug }) => ({
   label: name,
   href: `/categories/${slug}`,
-  hue,
 }));
 
 const MAGAZINE: Entry[] = [
@@ -66,24 +63,19 @@ function Column({ title, links }: { title: string; links: Entry[] }) {
         {title}
       </h3>
       <ul className="mt-5 space-y-3">
-        {links.map(({ label, href, hue }) => (
+        {links.map(({ label, href }) => (
           <li key={label}>
             <Link
               href={href}
               className="group inline-flex items-start gap-2 font-garamond text-[15px] leading-[1.25] opacity-75 transition-opacity hover:opacity-100 sm:gap-3 sm:text-[17px]"
             >
-              {hue ? (
-                <span
-                  aria-hidden
-                  className="mt-[0.36em] size-2 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
-                  style={{ backgroundColor: hue }}
-                />
-              ) : (
-                <span
-                  aria-hidden
-                  className="mt-[0.36em] size-2 shrink-0 bg-current opacity-0 transition-opacity group-hover:opacity-40"
-                />
-              )}
+              {/* The marker is the link's own colour and only shows under the
+                  hand — it keeps the ladder aligned without putting a swatch
+                  beside every line. */}
+              <span
+                aria-hidden
+                className="mt-[0.36em] size-2 shrink-0 bg-current opacity-0 transition-opacity group-hover:opacity-40"
+              />
               {label}
             </Link>
           </li>
@@ -128,7 +120,7 @@ export default function Footer({
           />
         </div>
 
-        <div className="relative mx-auto w-full max-w-[1400px] px-5 pt-14 pb-10 sm:px-10 sm:pt-20">
+        <div className="relative mx-auto w-full max-w-[1400px] px-5 pt-14 pb-14 sm:px-10 sm:pt-20 sm:pb-16">
           <div className="grid gap-12 lg:grid-cols-[minmax(0,1.15fr)_repeat(3,minmax(0,0.62fr))] lg:gap-10">
             {/* The masthead, in the hero's two hands and the hero's yellow. */}
             <div className="max-w-[42ch]">
@@ -191,16 +183,9 @@ export default function Footer({
             </div>
           </div>
 
-          {/* the nav's broken signal bar, closing what it opened */}
-          <div aria-hidden className="mt-14 flex h-px w-full sm:mt-16">
-            <span className="h-full flex-[3] bg-white/60" />
-            <span className="h-full flex-[1]" />
-            <span className="h-full flex-[6] bg-[color:var(--cyan)]/70" />
-            <span className="h-full flex-[1]" />
-            <span className="h-full flex-[2] bg-white/30" />
-          </div>
-
-          <div className="mt-7 flex flex-col gap-5 font-arial text-[9px] font-bold tracking-[0.18em] uppercase opacity-45 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+          {/* No rule under the columns — the gap does the separating, and the
+              static behind it is easier to read without a line cutting it. */}
+          <div className="mt-14 flex flex-col gap-5 font-arial text-[9px] font-bold tracking-[0.18em] uppercase opacity-45 sm:mt-16 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>© {new Date().getFullYear()} Glitch Decoded</span>
               <span aria-hidden className="opacity-40">
@@ -243,15 +228,6 @@ export default function Footer({
             End of transmission
             <span aria-hidden className="blink inline-block h-[9px] w-[7px] bg-current" />
           </p>
-        </div>
-
-        {/* Colour bars. The rail's six hues in its own order, the way a channel
-            signs off — the last thing on screen before the set goes dark. */}
-        <div aria-hidden className="flex h-3 w-full sm:h-4">
-          {CATEGORIES.map(({ slug, hue }) => (
-            <span key={slug} className="h-full flex-1" style={{ backgroundColor: hue }} />
-          ))}
-          <span className="h-full flex-1 bg-[color:var(--bone)]" />
         </div>
       </footer>
     </>
