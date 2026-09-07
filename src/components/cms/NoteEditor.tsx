@@ -163,7 +163,7 @@ export default function NoteEditor({ note }: { note: EditableNote }) {
               <p className="mt-2 font-arial text-[9px] tracking-[0.16em] uppercase opacity-35">
                 {uploading
                   ? "Uploading…"
-                  : "Square reads best · jpg, png, webp or avif · up to 8 mb · leave it empty and the card keeps its category art"}
+                  : "Square reads best · jpg, png, webp or avif up to 8 mb, saved as webp under 100 kb · leave it empty and the card keeps its category art"}
               </p>
 
               {imageUrl && !uploading && (

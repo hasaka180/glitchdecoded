@@ -135,7 +135,7 @@ export default function CoverField({
 
       <p className="mt-3 font-arial text-[9px] tracking-[0.16em] uppercase opacity-35">
         {RECOMMENDED} · at least 1200 × 630 or link previews go soft · jpg, png,
-        webp or avif · up to 8 mb
+        webp or avif up to 8 mb · saved as webp under 100 kb
       </p>
 
       <div className="mt-6">

@@ -53,6 +53,7 @@ export async function uploadCover(
   if (problem) return { error: problem };
 
   const stored = await storeImage(file as File);
+  if ("error" in stored) return { error: stored.error };
 
   // The old file goes only once the new one is safely stored, so a failed
   // upload leaves the piece with the cover it already had.

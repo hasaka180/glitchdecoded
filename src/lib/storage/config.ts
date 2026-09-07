@@ -43,16 +43,33 @@ export function r2Config() {
   };
 }
 
-/** What a cover may weigh and be. Nothing downstream re-checks this. */
+/**
+ * What a cover may weigh and be *on the way in*. The upload is re-encoded
+ * before it reaches the bucket, so this is a limit on what the server is
+ * willing to decode, not on what it stores.
+ */
 export const COVER_MAX_BYTES = 8 * 1024 * 1024;
 
-/** Accepted types, paired with the extension the stored key gets. */
-export const COVER_TYPES: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/avif": "avif",
-};
+/** Accepted types. What lands in the bucket is always WebP regardless. */
+export const COVER_TYPES: ReadonlySet<string> = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+]);
+
+/**
+ * What the bucket holds. One format and one ceiling, whatever came in.
+ *
+ * A cover is the first thing a reader waits for and the thing a link preview
+ * fetches, so the 8 MB phone photo a writer picks is re-encoded rather than
+ * passed through: WebP because every browser that matters draws it and it
+ * beats JPEG at the same quality, and 100 KB because that is the point where
+ * a full-width cover stops costing anyone a visible pause.
+ */
+export const STORED_TYPE = "image/webp";
+export const STORED_EXTENSION = "webp";
+export const STORED_MAX_BYTES = 100 * 1024;
 
 /**
  * The public URL of a stored object.

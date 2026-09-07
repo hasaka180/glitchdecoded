@@ -147,6 +147,7 @@ export async function uploadNoteImage(
   if (problem) return { error: problem };
 
   const stored = await storeImage(formData.get("file") as File);
+  if ("error" in stored) return { error: stored.error };
 
   // The old file goes only once the new one is stored, so a failed upload
   // leaves the note with the picture it already had.
