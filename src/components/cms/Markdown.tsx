@@ -161,7 +161,7 @@ function renderBlocks(tokens: Token[], keyPrefix: string): ReactNode {
 
       case "paragraph":
         return (
-          <p key={key} className="my-5 leading-[1.7]">
+          <p key={key} className="my-5 leading-[1.5]">
             {renderInline((token as Tokens.Paragraph).tokens, key)}
           </p>
         );
@@ -188,7 +188,7 @@ function renderBlocks(tokens: Token[], keyPrefix: string): ReactNode {
               : {})}
           >
             {t.items.map((item, j) => (
-              <li key={`${key}-${j}`} className="leading-[1.65] pl-1">
+              <li key={`${key}-${j}`} className="leading-[1.5] pl-1">
                 {/* A "loose" list wraps each item in a paragraph; a tight one
                     does not, and re-wrapping it would double the spacing. */}
                 {item.tokens.length && item.tokens[0].type === "text"
@@ -261,7 +261,7 @@ function renderBlocks(tokens: Token[], keyPrefix: string): ReactNode {
 
       default:
         return (
-          <p key={key} className="my-5 leading-[1.7]">
+          <p key={key} className="my-5 leading-[1.5]">
             {renderInline([token], key)}
           </p>
         );
