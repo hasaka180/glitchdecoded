@@ -133,7 +133,7 @@ function renderInline(tokens: Token[] | undefined, keyPrefix: string): ReactNode
 
 const HEADING_CLASS: Record<number, string> = {
   1: "mt-12 mb-4 font-display text-[32px] leading-[1.15] font-semibold sm:text-[40px]",
-  2: "mt-12 mb-4 font-display text-[26px] leading-[1.2] font-semibold sm:text-[32px]",
+  2: "mt-12 mb-4 font-display text-[22px] leading-[1.05] font-semibold sm:text-[26px]",
   3: "mt-10 mb-3 font-display text-[21px] leading-[1.25] font-semibold sm:text-[25px]",
   4: "mt-8 mb-2 font-arial text-[12px] font-bold tracking-[0.18em] uppercase opacity-70",
   5: "mt-8 mb-2 font-arial text-[11px] font-bold tracking-[0.18em] uppercase opacity-60",
