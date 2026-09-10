@@ -119,6 +119,8 @@ function Still({ reel, id, index }: { reel: Reel; id: string; index: number }) {
       <img
         src={thumbnailSrc(id)}
         alt=""
+        loading="lazy"
+        decoding="async"
         className="absolute inset-0 size-full object-cover"
       />
       <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-6 p-4 sm:p-9">

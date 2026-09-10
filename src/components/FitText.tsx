@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
+  /**
+   * Width of this line at font-size 1, i.e. `lineWidth / fontSize`, which is a
+   * constant for a given string in a given face. It lets CSS arrive at the
+   * final size on its own — see the note on the effect below.
+   */
+  ratio: number;
   /** Ceiling on the computed size, in px. */
   max?: number;
   className?: string;
@@ -12,8 +18,19 @@ type Props = {
 /**
  * Scales one line of type so it spans its container exactly. Children size
  * themselves in `em`, so a mixed-face lockup scales as a unit.
+ *
+ * The size is arrived at twice. CSS gets there first, from `ratio` and the
+ * container's own inline size, so the line is already the right size in the
+ * very first frame the browser paints. The measurement below then corrects it
+ * once the real faces have loaded.
+ *
+ * That order is the whole point. With only the measurement, the headline had
+ * no size at all until the bundle had hydrated: it painted small, then jumped
+ * to full size seconds later, and because that jump is a much larger paint,
+ * the browser recorded it as the Largest Contentful Paint — 5.4s of "render
+ * delay" on a page whose text was in the HTML from the start.
  */
-export default function FitText({ children, max = 900, className }: Props) {
+export default function FitText({ children, ratio, max = 900, className }: Props) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const lineRef = useRef<HTMLSpanElement | null>(null);
 
@@ -53,10 +70,24 @@ export default function FitText({ children, max = 900, className }: Props) {
   }, [children, max]);
 
   return (
-    <div ref={wrapRef} className={`w-full ${className ?? ""}`}>
-      <span ref={lineRef} className="inline-block whitespace-nowrap">
-        {children}
-      </span>
+    // The shell is the container the line measures itself against, so `cqw`
+    // below is exactly the space the line has to fill — no viewport or padding
+    // arithmetic, and nothing to keep in step with the layout around it.
+    <div className="fit-shell w-full">
+      <div
+        ref={wrapRef}
+        className={`fit-text w-full ${className ?? ""}`}
+        style={
+          {
+            "--fit-ratio": ratio,
+            "--fit-max": `${max}px`,
+          } as CSSProperties
+        }
+      >
+        <span ref={lineRef} className="inline-block whitespace-nowrap">
+          {children}
+        </span>
+      </div>
     </div>
   );
 }

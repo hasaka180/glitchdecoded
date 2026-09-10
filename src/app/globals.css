@@ -857,3 +857,58 @@ body {
     line-clamp: 4;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Hero art
+   The photo under the fractured-glass canvas, as a plain <img> so the preload
+   scanner finds it in the streamed HTML rather than waiting for hydration.
+   `object-fit: cover` does the sizing; these only choose which part of the
+   frame survives the crop, and the narrow art is framed on its own subject.
+
+   The breakpoint has to stay in step with PixelUnglitch's `mobileMaxWidth`,
+   which is what <source media> and the canvas's own framing both switch on.
+--------------------------------------------------------------------------- */
+
+.hero-art {
+  object-position: var(--art-pos, 50% 50%);
+  transform: scale(var(--art-zoom, 1));
+  transform-origin: var(--art-pos, 50% 50%);
+}
+
+@media (max-width: 640px) {
+  .hero-art {
+    object-position: var(--art-pos-narrow, var(--art-pos, 50% 50%));
+    transform: scale(var(--art-zoom-narrow, var(--art-zoom, 1)));
+    transform-origin: var(--art-pos-narrow, var(--art-pos, 50% 50%));
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Fitted display lines
+   A line of type that spans its container exactly. The size is a pure function
+   of the container's inline size and the line's width-at-font-size-1, so CSS
+   can reach it in the first frame instead of waiting for script to measure.
+   FitText's own measurement then corrects for the loaded faces.
+--------------------------------------------------------------------------- */
+
+.fit-shell {
+  container-type: inline-size;
+}
+
+.fit-text {
+  font-size: min(var(--fit-max, 900px), calc(100cqw / var(--fit-ratio, 6)));
+}
+
+/* ---------------------------------------------------------------------------
+   Offscreen sections
+   Marked by PauseOffscreen. Decoration in a section nobody can see should not
+   be costing style recalculation on every frame — see that component for what
+   this is worth in practice.
+--------------------------------------------------------------------------- */
+
+[data-offscreen="true"],
+[data-offscreen="true"] *,
+[data-offscreen="true"] *::before,
+[data-offscreen="true"] *::after {
+  animation-play-state: paused !important;
+}

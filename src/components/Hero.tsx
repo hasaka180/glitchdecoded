@@ -11,12 +11,14 @@ export default function Hero() {
       <PixelUnglitch
         className="absolute inset-0 -z-10"
         src="/assets/wallpaper.jpg"
+        webpSrc="/assets/wallpaper.webp"
         unit={18}
         radius={255}
         focus={[0.51, 0.5]}
         anchor={[0.56, 0.46]}
         zoom={1.15}
         mobileSrc="/assets/wallpapermob.jpg"
+        mobileWebpSrc="/assets/wallpapermob.webp"
         mobileFocus={[0.5, 0.38]}
         mobileAnchor={[0.5, 0.42]}
         mobileZoom={1}
@@ -40,17 +42,17 @@ export default function Hero() {
 
           {/* phone: a fitted line each */}
           <div aria-hidden className="sm:hidden">
-            <FitText className="leading-[0.8] text-[color:var(--yellow)]">
+            <FitText ratio={2.432} className="leading-[0.8] text-[color:var(--yellow)]">
               <span className="font-signature">Glitch</span>
             </FitText>
-            <FitText className="mt-2 leading-[0.85] text-[color:var(--yellow)]">
+            <FitText ratio={3.557} className="mt-2 leading-[0.85] text-[color:var(--yellow)]">
               <span className="font-pixel tracking-[-0.01em]">DECODED</span>
             </FitText>
           </div>
 
           {/* wide: both words on one fitted line */}
           <div aria-hidden className="hidden sm:block">
-            <FitText className="leading-[0.85] text-[color:var(--yellow)]">
+            <FitText ratio={6.1175} className="leading-[0.85] text-[color:var(--yellow)]">
               <span className="font-signature text-[0.95em]">
                 Glitch
               </span>{" "}

@@ -316,6 +316,8 @@ export default function EditorsNote({ drive }: Props = {}) {
           <img
             src="/assets/umbrella-animated.svg"
             alt="Two figures sheltering under one umbrella in the rain"
+            loading="lazy"
+            decoding="async"
             style={appear(0.1, 1.15)}
             className="note-art fly-block mx-auto w-full max-w-[230px] self-center sm:max-w-[300px] md:w-[clamp(220px,22vw,330px)] md:max-w-none"
           />

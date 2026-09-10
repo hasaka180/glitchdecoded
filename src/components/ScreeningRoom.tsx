@@ -97,6 +97,8 @@ function Still({ id }: { id: string }) {
     <img
       src={thumbnailSrc(id)}
       alt=""
+      loading="lazy"
+      decoding="async"
       className="absolute inset-0 size-full object-cover"
     />
   );
@@ -130,6 +132,32 @@ export default function ScreeningRoom({
      through the rail can't leave the tube stuck on snow. */
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  /* The player is mounted on approach rather than with the page.
+     A YouTube embed is not a picture: it pulls its own player bundle and then
+     starts buffering video, and because it autoplays it does all of that at
+     high priority. On the home page, where the set sits several screens down,
+     that was around 1.5 MB of third-party traffic competing with the hero for
+     the connection before the reader had scrolled at all.
+     The still underneath is what the set shows either way, so waiting until
+     the section is near costs nothing visible — by the time it can be read,
+     the picture is already running. */
+  const setRef = useRef<HTMLDivElement | null>(null);
+  const [playerNear, setPlayerNear] = useState(false);
+  useEffect(() => {
+    const el = setRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        setPlayerNear(true);
+        io.disconnect();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   const select = (i: number) => {
     if (i === current) return;
@@ -212,13 +240,14 @@ export default function ScreeningRoom({
 
             <div className="relative mx-[10px] overflow-hidden rounded-[10px] bg-black">
               <div
+                ref={setRef}
                 className={`reel-pic relative aspect-[16/10] w-full ${inStage ? "max-h-[46lvh]" : ""}`}
               >
                 {/* The still sits under the player, so it is what shows
                     while the iframe loads rather than a black frame. */}
                 {id ? <Still id={id} /> : <TitleCard reel={reel} index={current} />}
 
-                {id ? (
+                {id && playerNear ? (
                   <iframe
                     key={reel.id}
                     className="absolute inset-0 size-full"

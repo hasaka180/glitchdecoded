@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { useNarrow } from "@/lib/useNarrow";
 
 type Props = {
   /** Photo to fracture. Falls back to a procedural neon scene. */
   src?: string;
+  /** Same picture as WebP, offered ahead of `src` where it is supported. */
+  webpSrc?: string;
   /** Base grid unit in CSS px — modules are multiples of this. */
   unit?: number;
   /** Spotlight radius in CSS px. */
@@ -19,6 +21,7 @@ type Props = {
   zoom?: number;
   /** Narrow-viewport art, with its own framing. Falls back to the wide one. */
   mobileSrc?: string;
+  mobileWebpSrc?: string;
   mobileFocus?: [number, number];
   mobileAnchor?: [number, number];
   mobileZoom?: number;
@@ -82,12 +85,14 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
  */
 export default function PixelUnglitch({
   src,
+  webpSrc,
   unit = 18,
   radius = 255,
   focus = [0.48, 0.3],
   anchor = [0.56, 0.42],
   zoom = 1.08,
   mobileSrc,
+  mobileWebpSrc,
   mobileFocus,
   mobileAnchor,
   mobileZoom,
@@ -96,6 +101,11 @@ export default function PixelUnglitch({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  // The canvas stays invisible until it has actually drawn a frame, so the
+  // handoff from the plain <img> underneath is a crossfade rather than a
+  // flash of the opaque black the context is cleared to.
+  const [shown, setShown] = useState(false);
 
   const narrow = useNarrow(mobileMaxWidth);
   const useMobile = narrow && !!mobileSrc;
@@ -302,16 +312,22 @@ export default function PixelUnglitch({
       }
     };
 
-    if (activeSrc) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        photo = img;
-        paintScene();
-        buildModules();
-      };
-      img.src = activeSrc;
-    }
+    // The photo is the <img> rendered below, not a second copy fetched here.
+    // It used to be `new Image()` inside this effect, which meant the browser
+    // could not learn the hero photo existed until the whole React bundle had
+    // downloaded, parsed and hydrated — the request that decides LCP was the
+    // last one the page made rather than the first. Rendered as markup it is
+    // found by the preload scanner in the initial HTML, and drawing from that
+    // same element costs no extra request and no extra decode.
+    const img = imgRef.current;
+    const adopt = () => {
+      if (!img || !img.naturalWidth) return;
+      photo = img;
+      paintScene();
+      buildModules();
+    };
+    if (img?.complete) adopt();
+    img?.addEventListener("load", adopt);
 
     const onMove = (e: PointerEvent) => {
       const rect = wrap.getBoundingClientRect();
@@ -328,16 +344,18 @@ export default function PixelUnglitch({
     wrap.addEventListener("pointerleave", onLeave);
 
     const ro = new ResizeObserver(resize);
-    ro.observe(wrap);
-    resize();
 
     // iOS suspends rAF when the tab is backgrounded and restores pages from
     // the back/forward cache without re-running effects — re-measure and reset
     // the clock on the way back so the loop picks up cleanly.
     const onResume = () => {
-      if (document.hidden) return;
+      if (document.hidden) {
+        stop();
+        return;
+      }
       last = performance.now();
       resize();
+      if (visible) start();
     };
     document.addEventListener("visibilitychange", onResume);
     window.addEventListener("pageshow", onResume);
@@ -362,8 +380,10 @@ export default function PixelUnglitch({
     let raf = 0;
     let last = performance.now();
     let frames = 0;
+    let revealed = false;
 
     const frame = (now: number) => {
+      if (!running) return;
       raf = requestAnimationFrame(frame);
       frames++;
       if (frames % 5 === 0) {
@@ -577,6 +597,12 @@ export default function PixelUnglitch({
         }
       }
         ctx.globalAlpha = 1;
+
+        // First good frame — fade the canvas up over the <img> it replaces.
+        if (!revealed && (photo || !activeSrc)) {
+          revealed = true;
+          setShown(true);
+        }
       } catch (err) {
         (window as unknown as { __glitch?: unknown }).__glitch = {
           drawError: String(err),
@@ -584,10 +610,49 @@ export default function PixelUnglitch({
       }
     };
 
-    raf = requestAnimationFrame(frame);
+    // Measuring, tiling the grid and painting the scene buffer is a few hundred
+    // ms of main thread on a mid-range phone. None of it is on the path to
+    // what the reader sees — the <img> underneath is already showing the photo
+    // — so it waits for the browser to go idle rather than competing with
+    // hydration, and it stops entirely whenever the hero scrolls away.
+    let running = false;
+    const start = () => {
+      if (running) return;
+      running = true;
+      last = performance.now();
+      raf = requestAnimationFrame(frame);
+    };
+    const stop = () => {
+      running = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    };
+
+    let visible = false;
+    const io = new IntersectionObserver(
+      (entries) => {
+        visible = entries[entries.length - 1].isIntersecting;
+        if (visible) start();
+        else stop();
+      },
+      { rootMargin: "200px" },
+    );
+
+    const activate = () => {
+      ro.observe(wrap); // its first callback is what measures and tiles
+      io.observe(wrap);
+    };
+    const canIdle = typeof window.requestIdleCallback === "function";
+    const idleId = canIdle
+      ? window.requestIdleCallback(activate, { timeout: 2000 })
+      : window.setTimeout(activate, 200);
 
     return () => {
-      cancelAnimationFrame(raf);
+      if (canIdle) window.cancelIdleCallback(idleId);
+      else clearTimeout(idleId);
+      stop();
+      io.disconnect();
+      img?.removeEventListener("load", adopt);
       ro.disconnect();
       document.removeEventListener("visibilitychange", onResume);
       window.removeEventListener("pageshow", onResume);
@@ -596,9 +661,61 @@ export default function PixelUnglitch({
     };
   }, [activeSrc, unit, radius, activeZoom, focusX, focusY, anchorX, anchorY]);
 
+  // Framing for the plain <img>, as custom properties so the narrow art can be
+  // reframed in CSS at the same breakpoint <source> switches on. `object-fit:
+  // cover` already sizes it; these only decide which part survives the crop.
+  const artStyle = {
+    "--art-pos": `${focus[0] * 100}% ${focus[1] * 100}%`,
+    "--art-zoom": zoom,
+    "--art-pos-narrow": `${(mobileFocus ?? focus)[0] * 100}% ${(mobileFocus ?? focus)[1] * 100}%`,
+    "--art-zoom-narrow": mobileZoom ?? zoom,
+  } as CSSProperties;
+
   return (
     <div ref={wrapRef} className={className}>
-      <canvas ref={canvasRef} className="block h-full w-full" />
+      {/* The photo, as markup rather than as something JavaScript goes and
+          fetches once it has hydrated. This is the LCP element: the preload
+          scanner finds it while the HTML is still streaming, so it is in
+          flight before a byte of the React bundle has run. The canvas above
+          draws from this very element once it is ready. */}
+      {src ? (
+        <picture>
+          {/* Order matters: the browser takes the first <source> that both
+              matches and it can decode, so the narrow art comes before the
+              wide one and WebP before the JPEG within each. */}
+          {mobileWebpSrc ? (
+            <source
+              media={`(max-width: ${mobileMaxWidth}px)`}
+              type="image/webp"
+              srcSet={mobileWebpSrc}
+            />
+          ) : null}
+          {mobileSrc ? (
+            <source
+              media={`(max-width: ${mobileMaxWidth}px)`}
+              srcSet={mobileSrc}
+            />
+          ) : null}
+          {webpSrc ? <source type="image/webp" srcSet={webpSrc} /> : null}
+          <img
+            ref={imgRef}
+            src={src}
+            alt=""
+            aria-hidden
+            fetchPriority="high"
+            decoding="async"
+            style={artStyle}
+            className="hero-art absolute inset-0 block size-full object-cover"
+          />
+        </picture>
+      ) : null}
+
+      <canvas
+        ref={canvasRef}
+        className={`relative block h-full w-full transition-opacity duration-700 ${
+          shown ? "opacity-100" : "opacity-0"
+        }`}
+      />
     </div>
   );
 }

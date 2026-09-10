@@ -13,6 +13,14 @@ import { PICKS, type Pick } from "@/lib/recommended";
  * A still, cropped to fill whatever box it is given. `pixelated` keeps the
  * current art — a 132x176 still of the category sprite — crisp as it upscales;
  * drop it if these are replaced with photographs.
+ *
+ * An <img> rather than a background, because a background image cannot be
+ * lazy-loaded: the browser fetches it the moment the element is styled, however
+ * far down the page it sits. These cards are well below the fold and their
+ * covers come from storage at whatever size they were uploaded — one of them a
+ * 2 MB PNG being painted into a 268x178 box — so the whole set was landing
+ * during the initial load. `object-cover`/`object-center` reproduce
+ * `bg-cover`/`bg-center` exactly, so the crop is unchanged.
  */
 function CardImage({
   image,
@@ -24,11 +32,17 @@ function CardImage({
   className?: string;
 }) {
   return (
-    <span
+    // A remote storage URL, which next/image would need every host
+    // configured for in advance.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={image}
+      alt=""
       aria-hidden
-      className={`absolute inset-0 bg-cover bg-center ${className ?? ""}`}
+      loading="lazy"
+      decoding="async"
+      className={`absolute inset-0 size-full object-cover object-center ${className ?? ""}`}
       style={{
-        backgroundImage: `url(${image})`,
         // Only the site's own pixel art wants this. A photograph the desk
         // uploaded would come out as blocks.
         imageRendering: pixel ? "pixelated" : undefined,

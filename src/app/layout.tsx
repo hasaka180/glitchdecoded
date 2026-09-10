@@ -7,13 +7,22 @@ import {
 } from "next/font/google";
 import localFont from "next/font/local";
 
+import PauseOffscreen from "@/components/PauseOffscreen";
 import SiteChrome from "@/components/cms/SiteChrome";
+import { SITE_URL } from "@/lib/site";
 
 import "./globals.css";
 
+// Below-the-fold faces are deliberately not preloaded. Every `preload: true`
+// font becomes a <link rel=preload> that competes with the hero photo for the
+// first few hundred KB of a slow connection — and the hero photo is the LCP
+// element. Only the faces that paint above the fold keep their preload: the
+// mono used by the nav and the scroll cue, and the two display faces in the
+// wordmark. The rest still load, just without jumping the queue.
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
@@ -28,11 +37,15 @@ const playfair = Playfair_Display({
   subsets: ["latin"],
   style: ["normal", "italic"],
   weight: ["500", "700", "900"],
+  preload: false,
 });
 
-// Bitmap face for the word mark, self-hosted from public/assets.
+// Bitmap face for the word mark, self-hosted from public/assets. WOFF2
+// rather than the original OTF: next/font passes local files through as they
+// are, and OTF carries no compression of its own, so the two display faces
+// were 160 KB of preloaded critical path where WOFF2 makes them 60 KB.
 const astheticPixel = localFont({
-  src: "../../public/assets/AstheticPixelDemoRegular-2v148.otf",
+  src: "../../public/assets/AstheticPixelDemoRegular-2v148.woff2",
   variable: "--font-pixel-face",
   display: "swap",
   weight: "400",
@@ -40,7 +53,7 @@ const astheticPixel = localFont({
 
 // Handwritten signature that runs ahead of the bitmap word.
 const paquthy = localFont({
-  src: "../../public/assets/paquthy.otf",
+  src: "../../public/assets/paquthy.woff2",
   variable: "--font-paquthy",
   display: "swap",
   weight: "400",
@@ -51,38 +64,8 @@ const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   style: ["normal", "italic"],
   weight: ["300", "400", "500", "600"],
+  preload: false,
 });
-
-/**
- * Where a link to this site is unfurled — a search result, a chat preview, a
- * card in a timeline — this is what it says. `metadataBase` is what lets the
- * relative `url` and `canonical` paths the article pages already set resolve
- * to absolute ones.
- *
- * The fallback chain exists because getting this wrong is silent and total:
- * with only a localhost default, a deploy that never had NEXT_PUBLIC_SITE_URL
- * set advertised its share card at http://localhost:3000/opengraph-image, which
- * no scraper on earth can fetch — so every shared link unfurled as text with a
- * blank space where the card should be, and nothing in the build complained.
- *
- * NEXT_PUBLIC_SITE_URL still wins, because it is the only one that knows which
- * host is canonical when a site answers on both the apex and www. The two after
- * it are Vercel's own, and cost nothing where they are absent.
- */
-function siteUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
-  if (explicit) return explicit;
-
-  // The project's production domain, and then this particular deployment —
-  // a preview should unfurl its own card rather than production's.
-  const vercel =
-    process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
-  if (vercel) return `https://${vercel}`;
-
-  return "http://localhost:3000";
-}
-
-const SITE_URL = siteUrl();
 
 const TITLE = "Glitch Decoded — unpopular opinions, untold stories";
 const DESCRIPTION =
@@ -219,6 +202,8 @@ export default function RootLayout({ children, modal }: LayoutProps<"/">) {
             auth screens, which carry their own header. */}
         <SiteChrome />
         {children}
+        {/* Idles the decoration in sections that are scrolled away. */}
+        <PauseOffscreen />
         {/* A piece opened from a listing renders here, over the page that
             linked to it. Empty on a hard load — see app/@modal/default.tsx. */}
         {modal}
