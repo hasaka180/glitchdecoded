@@ -54,6 +54,14 @@ const TAKE_PART: Entry[] = [
  */
 const ELSEWHERE: Entry[] = SOCIALS.map(({ label, href }) => ({ label, href }));
 
+/** The small print, at the foot of the sign-off. */
+const LEGAL: Entry[] = [
+  { label: "Data policy", href: "/privacy" },
+  { label: "Cookies", href: "/cookies" },
+  { label: "Terms", href: "/terms" },
+  { label: "Contact", href: "/contact" },
+];
+
 function Column({ title, links }: { title: string; links: Entry[] }) {
   return (
     <div>
@@ -209,18 +217,15 @@ export default function Footer({
             </p>
 
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              <a href="#privacy" className="transition-opacity hover:opacity-100">
-                Privacy
-              </a>
-              <a href="#terms" className="transition-opacity hover:opacity-100">
-                Terms
-              </a>
-              <Link
-                href="/contact"
-                className="transition-opacity hover:opacity-100"
-              >
-                Contact
-              </Link>
+              {LEGAL.map(({ label, href }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="transition-opacity hover:opacity-100"
+                >
+                  {label}
+                </Link>
+              ))}
             </div>
           </div>
 
