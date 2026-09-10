@@ -103,11 +103,11 @@ export default function RecommendedGrid({ picks = PICKS }: { picks?: Pick[] }) {
             <p className="font-arial text-[10px] font-bold tracking-[0.3em] uppercase opacity-50 sm:text-[11px]">
               Your reading
             </p>
-            <h2 className="mt-4 font-pixel text-[26px] leading-[1.15] tracking-[0.02em] uppercase sm:text-[42px]">
+            <h2 className="mt-4 font-pixel text-[26px] leading-[1.05] tracking-[0.02em] uppercase sm:text-[42px]">
               Recommended for you
             </h2>
           </div>
-          <p className="max-w-[32ch] font-garamond text-[16px] leading-[1.5] opacity-70 sm:text-right">
+          <p className="max-w-[32ch] font-garamond text-[16px] leading-[1.35] opacity-70 sm:text-right">
             Five pieces, picked from the topics you stopped on rather than the
             ones everybody clicks.
           </p>
@@ -147,10 +147,10 @@ export default function RecommendedGrid({ picks = PICKS }: { picks?: Pick[] }) {
                 >
                   {featured.category}
                 </span>
-                <h3 className="mt-3 max-w-[26ch] font-garamond text-[27px] leading-[1.15] font-semibold sm:text-[34px]">
+                <h3 className="mt-3 max-w-[26ch] font-garamond text-[27px] leading-[1.05] font-semibold sm:text-[34px]">
                   {featured.title}
                 </h3>
-                <p className="mt-4 max-w-[46ch] font-garamond text-[16px] leading-[1.55] opacity-75 sm:text-[17px]">
+                <p className="mt-4 max-w-[46ch] font-garamond text-[16px] leading-[1.35] opacity-75 sm:text-[17px]">
                   {featured.dek}
                 </p>
 
@@ -189,10 +189,10 @@ export default function RecommendedGrid({ picks = PICKS }: { picks?: Pick[] }) {
                   </span>
 
                   <div>
-                    <h3 className="font-garamond text-[20px] leading-[1.2] font-semibold">
+                    <h3 className="font-garamond text-[20px] leading-[1.1] font-semibold">
                       {pick.title}
                     </h3>
-                    <p className="mt-2 font-garamond text-[14px] leading-[1.5] opacity-65">
+                    <p className="mt-2 font-garamond text-[14px] leading-[1.35] opacity-65">
                       {pick.dek}
                     </p>
                     <span className="mt-4 block">
