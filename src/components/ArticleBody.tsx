@@ -25,7 +25,11 @@ export default function ArticleBody({ article }: { article: ArticleView }) {
           </span>
         </p>
 
-        <h1 className="mt-6 font-pixel text-[clamp(1.5rem,4vw,2.6rem)] leading-[1.12] uppercase">
+        {/* Cormorant in mixed case, the way a headline reads on a card. The
+            bitmap face is the magazine's furniture — section heads, kickers,
+            the word mark — and set uppercase across four lines of a real
+            headline it stops being a title and starts being a sign. */}
+        <h1 className="mt-6 max-w-[24ch] font-garamond text-[clamp(2rem,4.8vw,3.3rem)] leading-[1.05] font-semibold">
           {article.title}
         </h1>
 
