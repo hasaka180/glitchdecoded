@@ -173,7 +173,7 @@ export default function AboutPage() {
                     <dt className="font-mono text-[10px] tracking-[0.24em] uppercase opacity-45">
                       {role}
                     </dt>
-                    <dd className="font-pixel text-[16px] tracking-[0.01em] uppercase text-[color:var(--yellow)]">
+                    <dd className="font-pixel text-[16px] tracking-[0.01em] uppercase text-[color:var(--ink)]">
                       {name}
                     </dd>
                     <dd className="font-garamond text-[17px] leading-[1.55] opacity-70">
@@ -186,75 +186,38 @@ export default function AboutPage() {
 
             {/* ---------------------------------------------- corrections -- */}
             <section id="corrections" className="scroll-mt-24 pt-20 sm:pt-28">
-              <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
-                <div>
-                  <p className="font-arial text-[10px] font-bold tracking-[0.3em] uppercase opacity-45 sm:text-[11px]">
-                    When we get it wrong
-                  </p>
-                  <h2 className="mt-4 max-w-[16ch] font-pixel text-[clamp(1.6rem,4vw,2.6rem)] leading-[1.15] uppercase">
-                    Corrections
-                  </h2>
+              <p className="font-arial text-[10px] font-bold tracking-[0.3em] uppercase opacity-45 sm:text-[11px]">
+                When we get it wrong
+              </p>
+              <h2 className="mt-4 max-w-[16ch] font-pixel text-[clamp(1.6rem,4vw,2.6rem)] leading-[1.15] uppercase">
+                Corrections
+              </h2>
 
-                  <div className="mt-6 max-w-[54ch] space-y-5 font-garamond text-[17px] leading-[1.6] opacity-75 sm:text-[18px]">
-                    <p>
-                      Anything factual that is wrong gets fixed in the piece and
-                      logged at the foot of it, with the date and what changed.
-                      We do not quietly edit and move on, and we do not delete a
-                      piece to make an error disappear.
-                    </p>
-                    <p>
-                      If the error goes to the substance of the argument rather
-                      than a detail, the note goes at the top, where you cannot
-                      miss it.
-                    </p>
-                    <p>
-                      Found one? Say so. Point at the sentence, tell us what it
-                      should say, and if you have a source, send it.
-                    </p>
-                  </div>
-
-                  <Link
-                    href="/contact"
-                    className="glitch mt-8 inline-block border border-[color:var(--ink-brown)]/70 px-4 py-2 font-mono text-[11px] tracking-[0.2em] uppercase transition-colors hover:bg-[color:var(--ink-brown)] hover:text-[color:var(--paper)]"
-                    data-text="Report a correction →"
-                  >
-                    Report a correction →
-                  </Link>
-                </div>
-
-                {/* colophon */}
-                <div className="border border-[color:var(--ink-brown)]/20 bg-white/50 p-6 sm:p-8">
-                  <p className="font-arial text-[10px] font-bold tracking-[0.26em] uppercase opacity-45">
-                    Colophon
-                  </p>
-
-                  <dl className="mt-6 space-y-5 font-garamond text-[16px] leading-[1.5]">
-                    {[
-                      ["Display", "Asthetic Pixel — the bitmap word mark"],
-                      ["Hand", "Paquthy — the signature that runs ahead of it"],
-                      ["Text", "Cormorant Garamond"],
-                      ["Labels", "Geist Mono, Arial"],
-                      ["Built with", "Next.js, hand-written CSS, no tracking"],
-                      ["Video", "YouTube stills; the cookie-free player on play"],
-                      ["Kept", "Your pinned note, in your browser only"],
-                    ].map(([term, def]) => (
-                      <div key={term}>
-                        <dt className="font-mono text-[9px] tracking-[0.24em] uppercase opacity-40">
-                          {term}
-                        </dt>
-                        <dd className="mt-1 opacity-75">{def}</dd>
-                      </div>
-                    ))}
-                  </dl>
-
-                  <p className="mt-8 font-garamond text-[15px] leading-[1.55] opacity-45">
-                    Everything on this site is served as it is written. There is
-                    no consent banner because nothing here sets a cookie —
-                    including the film player, which runs on the host that
-                    does not.
-                  </p>
-                </div>
+              <div className="mt-6 max-w-[54ch] space-y-5 font-garamond text-[17px] leading-[1.6] opacity-75 sm:text-[18px]">
+                <p>
+                  Anything factual that is wrong gets fixed in the piece and
+                  logged at the foot of it, with the date and what changed.
+                  We do not quietly edit and move on, and we do not delete a
+                  piece to make an error disappear.
+                </p>
+                <p>
+                  If the error goes to the substance of the argument rather
+                  than a detail, the note goes at the top, where you cannot
+                  miss it.
+                </p>
+                <p>
+                  Found one? Say so. Point at the sentence, tell us what it
+                  should say, and if you have a source, send it.
+                </p>
               </div>
+
+              <Link
+                href="/contact"
+                className="glitch mt-8 inline-block border border-[color:var(--ink-brown)]/70 px-4 py-2 font-mono text-[11px] tracking-[0.2em] uppercase transition-colors hover:bg-[color:var(--ink-brown)] hover:text-[color:var(--paper)]"
+                data-text="Report a correction →"
+              >
+                Report a correction →
+              </Link>
             </section>
 
             {/* ----------------------------------------------------- CTA --- */}
